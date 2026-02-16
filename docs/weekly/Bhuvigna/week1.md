@@ -9,4 +9,4 @@ WEEK 2 plans
 1. LEARN GO (I'm kinda lagging behind on this)
 2. Work on a basic in-memory filesystem in FUSE, referring to ramFS and tmpFS.
 3. Try implementing FUSE filesystem using GO
-4. Make a clear and well structure PPT T_T and deliver the content better in weekly review.
+4. Make a clear and well structure presentation and deliver the content better in weekly review.
