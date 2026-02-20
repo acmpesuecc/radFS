@@ -9,7 +9,7 @@ import (
 	radFS "github.com/acmpesuecc/radFS/fs"
 )
 
-type config struct {
+type Config struct {
 	Mount string
 	Debug bool
 }
@@ -24,7 +24,7 @@ func main() {
 		return
 	}
 
-	cfg := &config{
+	cfg := &Config{
 		Debug: *debug,
 		Mount: flag.Arg(0),
 	}
