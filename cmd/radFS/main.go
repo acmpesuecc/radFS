@@ -10,13 +10,11 @@ import (
 )
 
 type config struct {
-	debug bool
-	mount string
+	Mount string
 }
 
 func main() {
 
-	debug := flag.Bool("d", false, "enable debug mode")
 	flag.Parse()
 
 	if flag.NArg() < 1 {
@@ -25,16 +23,12 @@ func main() {
 	}
 
 	cfg := &config{
-		debug: *debug,
-		mount: flag.Arg(0),
-	}
 
-	if cfg.debug {
-		fmt.Println("debug mode enabled")
+		Mount: flag.Arg(0),
 	}
 
 	//c is a fuse connection to dev/fuse
-	c, err := fuse.Mount(cfg.mount)
+	c, err := fuse.Mount(cfg.Mount)
 
 	if err != nil {
 		fmt.Println(err)
