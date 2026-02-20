@@ -1,14 +1,11 @@
 package fs
 
 import (
-
-	"fmt"
 	"os"
 	"context"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
-
 )
 
 type FS struct{}
