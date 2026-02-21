@@ -15,6 +15,11 @@ func (Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	if debug {
 		log.Printf("Lookup called for: %s", name)
 	}
+
+	if name == "hello.txt" {
+		return &File{}, nil
+	}
+
 	return nil, syscall.ENOENT
 }
 
