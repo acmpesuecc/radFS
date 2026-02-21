@@ -4,14 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	radFS "github.com/acmpesuecc/radFS/fs"
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
+	radFS "github.com/acmpesuecc/radFS/fs"
 )
 
-
 func main() {
-
 	if len(os.Args) != 2 {
 		fmt.Println("Invalid usage. Use go run main.go <mntpoint>")
 		return
@@ -32,13 +30,11 @@ func main() {
 	err = fs.Serve(c, radFS.FS{}) //starts listening for FS reqs
 
 	if err != nil {
-    	fmt.Println(err)
+		fmt.Println(err)
 	}
 
 	// <-c.Ready
 	// if err := c.MountError; err != nil {
 	// 	fmt.Println(err)
 	// }
-	
-
 }

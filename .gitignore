@@ -1,0 +1,10 @@
+radfs*
+main
+*.out
+*.exe
+*.test
+
+**/.DS_Store
+
+go.work
+go.work.sum
