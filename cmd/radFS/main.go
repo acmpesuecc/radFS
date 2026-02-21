@@ -1,26 +1,39 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"os"
 
-	radFS "github.com/acmpesuecc/radFS/fs"
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
+	radFS "github.com/acmpesuecc/radFS/fs"
 )
 
+type Config struct {
+	Mount string
+	Debug bool
+}
 
 func main() {
+	debug := flag.Bool("d", false, "enable debug mode")
 
-	if len(os.Args) != 2 {
-		fmt.Println("Invalid usage. Use go run main.go <mntpoint>")
+	flag.Parse()
+
+	if flag.NArg() < 1 {
+		fmt.Println("use: go run main.go -d <mountpoint>")
 		return
 	}
 
-	mount_point := os.Args[1]
+	cfg := &Config{
+		Debug: *debug,
+		Mount: flag.Arg(0),
+	}
+	if cfg.Debug {
+		fmt.Println("Debug mode enabled")
+	}
 
 	//c is a fuse connection to dev/fuse
-	c, err := fuse.Mount(mount_point)
+	c, err := fuse.Mount(cfg.Mount)
 
 	if err != nil {
 		fmt.Println(err)
@@ -32,13 +45,12 @@ func main() {
 	err = fs.Serve(c, radFS.FS{}) //starts listening for FS reqs
 
 	if err != nil {
-    	fmt.Println(err)
+		fmt.Println(err)
 	}
 
 	// <-c.Ready
 	// if err := c.MountError; err != nil {
 	// 	fmt.Println(err)
 	// }
-	
 
 }
