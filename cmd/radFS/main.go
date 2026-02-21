@@ -43,7 +43,7 @@ func main() {
 
 	defer c.Close() //delay execution of Close
 
-	err = fs.Serve(c, radFS.FS{}) //starts listening for FS reqs
+	err = fs.Serve(c, radFS.FS{Debug: cfg.debug}) //starts listening for FS reqs
 
 	if err != nil {
 		fmt.Println(err)
