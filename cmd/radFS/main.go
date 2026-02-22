@@ -20,7 +20,7 @@ func main() {
 	flag.Parse()
 
 	if flag.NArg() < 1 {
-		fmt.Println("use: go run main.go -d <mountpoint>")
+		fmt.Println("Usage: go run main.go [-d] <mountpoint>")
 		return
 	}
 
