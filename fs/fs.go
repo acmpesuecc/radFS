@@ -13,7 +13,9 @@ type FS struct{ Debug bool }
 func (f FS) Root() (fs.Node, error) {
 	return &Dir{
 		Debug: f.Debug,
-		Nodes: make(map[string]fs.Node),
+		Nodes: map[string]fs.Node{
+			"hello.txt": &File{},
+		},
 	}, nil
 }
 
