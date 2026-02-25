@@ -9,10 +9,8 @@ import (
 	"bazil.org/fuse/fs"
 )
 
-var debug = true
-
 func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
-	if debug {
+	if d.Debug {
 		log.Printf("Lookup called for: %s", name)
 	}
 
@@ -25,7 +23,7 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 }
 
 func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
-	if debug {
+	if d.Debug {
 		log.Println("ReadDirAll() called")
 	}
 

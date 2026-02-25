@@ -8,21 +8,24 @@ import (
 	"bazil.org/fuse/fs"
 )
 
-type FS struct{}
+type FS struct{ Debug bool }
 
-func (FS) Root() (fs.Node, error) {
+func (f FS) Root() (fs.Node, error) {
 	return &Dir{
+		Debug: f.Debug,
 		Nodes: map[string]fs.Node{
-			"hello.txt": &File{}, // Hardcoded default file
+			"hello.txt": &File{},
 		},
 	}, nil
 }
 
 type Dir struct {
+	Debug bool
 	Nodes map[string]fs.Node
 }
 
-func (Dir) Attr(ctx context.Context, a *fuse.Attr) error {
+func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
+
 	a.Inode = 1                 //inode 1 cuz root
 	a.Mode = os.ModeDir | 0o755 //octal perms for rwx r-x r-x
 
