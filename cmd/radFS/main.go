@@ -39,7 +39,7 @@ func main() {
 
 	//main() goroutine waits here
 	<-signals
-	fmt.Println("Interrupt recived : shutting down.")
+	fmt.Println(" Interrupt recived : shutting down.")
 	unmount_err := fuse.Unmount(mount_point)
 
 	if unmount_err != nil {
