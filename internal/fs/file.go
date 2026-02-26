@@ -8,13 +8,17 @@ import (
 )
 
 // File struct
-type File struct{}
+type File struct {
+	Name string
+	Data []byte
+}
 
 // File attributes
-func (File) Attr(ctx context.Context, a *fuse.Attr) error {
+func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Inode = 2
 	a.Mode = 0o444 // read-only
 	a.Size = uint64(len("Hello from radFS!\n"))
+
 	return nil
 }
 
