@@ -1,17 +1,15 @@
 package fs
 
 import (
-
-	"syscall"
 	"context"
 	"log"
+	"syscall"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
-
 )
 
-//dirs dont need handle as no I/O for them
+// dirs dont need handle as no I/O for them
 func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error) {
 
 	name := req.Name
@@ -20,16 +18,16 @@ func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error
 		log.Printf("New Dir Called at: %s", name)
 	}
 
-	_, exists := d.Nodes[name]; //value not needed => make it _
+	_, exists := d.Nodes[name] //value not needed => make it _
 
 	//dupes
 	if exists {
 		return nil, syscall.EEXIST
-	} 
+	}
 
 	//create dir
 	new_dir := &Dir{
-		Nodes : make(map[string]fs.Node),
+		Nodes: make(map[string]fs.Node),
 	}
 	d.Nodes[req.Name] = new_dir
 
@@ -41,9 +39,9 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 
 	file_name := req.Name
 
-	new_file := &File {
+	new_file := &File{
 		Name: file_name,
-		Data: []byte{}, 
+		Data: []byte{},
 	}
 
 	d.Nodes[file_name] = new_file

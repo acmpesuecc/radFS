@@ -8,7 +8,7 @@ import (
 )
 
 // File struct
-type File struct{
+type File struct {
 	Name string
 	Data []byte
 }

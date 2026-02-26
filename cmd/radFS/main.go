@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/signal"
 	"os/exec"
+	"os/signal"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -30,13 +30,12 @@ func main() {
 
 	//routine for serve
 	serv := make(chan error, 1)
-	go func() {	
+	go func() {
 		serv <- fs.Serve(c, radFS.FS{})
 	}()
-	
+
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt) //internal go runtime/routine
-
 
 	//main() goroutine waits here
 	<-signals
@@ -44,28 +43,23 @@ func main() {
 	unmount_err := fuse.Unmount(mount_point)
 
 	if unmount_err != nil {
-	
+
 		fmt.Println("Lazy Unmounting")
 
 		command := exec.Command("fusermount", "-u", "-z", mount_point)
-		cmd_err := command.Run() 
+		cmd_err := command.Run()
 
 		if cmd_err != nil {
 			fmt.Println(cmd_err)
 			return
-		} 
+		}
 
 		return
-		
 
 	}
 
-
-
 	if err := <-serv; err != nil {
 		fmt.Println("Serve error:", err)
-	}	
-	
+	}
 
-	
 }
