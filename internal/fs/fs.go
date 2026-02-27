@@ -1,20 +1,43 @@
 package fs
 
 import (
+	"sync"
+	"sync/atomic"
+
 	"bazil.org/fuse/fs"
 )
 
 type FS struct{}
 
-var debug = true
+var inodeCounter uint64 = 2
+
+func nextInode() uint64 {
+	return atomic.AddUint64(&inodeCounter, 1)
+}
 
 func (FS) Root() (fs.Node, error) {
-	return &Dir{
+	root := &Dir{
+		inode: 1,
 		Nodes: map[string]fs.Node{
 			"hello.txt": &File{
-				Name: "hello.txt",
-				Data: []byte("Hello from radFS!\n"),
-			}, // Hardcoded default file
+				inode: nextInode(),
+				data:  []byte("Hello from radFS!\n"),
+				mode:  0o666,
+			},
 		},
-	}, nil
+	}
+	return root, nil
+}
+
+type File struct {
+	mu    sync.Mutex
+	inode uint64
+	data  []byte
+	mode  uint32
+}
+
+type Dir struct {
+	mu    sync.Mutex
+	inode uint64
+	Nodes map[string]fs.Node
 }
