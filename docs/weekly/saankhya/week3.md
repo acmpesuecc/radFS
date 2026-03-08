@@ -9,4 +9,4 @@ Main focus areas:
 
 Whats next:
 • Explore B-Trees , Tries, Radix tree etc
-• Maybe possible implement a data structure ?
+• Maybe possible implement a data structure?
