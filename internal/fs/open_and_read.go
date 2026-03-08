@@ -14,6 +14,7 @@ func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Inode = f.inode
 	a.Mode = os.FileMode(f.mode)
 	a.Size = uint64(len(f.data))
+
 	return nil
 }
 
@@ -24,15 +25,17 @@ func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenR
 func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+
 	if req.Offset >= int64(len(f.data)) {
 		resp.Data = []byte{}
+
 		return nil
 	}
+
 	end := req.Offset + int64(req.Size)
-	if end > int64(len(f.data)) {
-		end = int64(len(f.data))
-	}
+	end = min(end, int64(len(f.data)))
 	resp.Data = f.data[req.Offset:end]
+
 	return nil
 }
 
@@ -52,6 +55,7 @@ func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.Wri
 
 	copy(f.data[req.Offset:], req.Data)
 	resp.Size = len(req.Data)
+
 	return nil
 }
 
@@ -77,6 +81,7 @@ func (f *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse
 	resp.Attr.Inode = f.inode
 	resp.Attr.Mode = os.FileMode(f.mode)
 	resp.Attr.Size = uint64(len(f.data))
+
 	return nil
 }
 

@@ -42,10 +42,12 @@ func main() {
 		fmt.Println("Lazy Unmounting")
 		command := exec.Command("fusermount", "-u", "-z", mount_point)
 		cmd_err := command.Run()
+
 		if cmd_err != nil {
 			fmt.Println(cmd_err)
 			return
 		}
+
 		return
 	}
 

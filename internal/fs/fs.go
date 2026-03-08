@@ -26,6 +26,7 @@ func (FS) Root() (fs.Node, error) {
 			},
 		},
 	}
+
 	return root, nil
 }
 
