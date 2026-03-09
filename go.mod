@@ -2,13 +2,6 @@ module github.com/acmpesuecc/radFS
 
 go 1.25.7
 
-<<<<<<< HEAD
 require bazil.org/fuse v0.0.0-20230120002735-62a210ff1fd5
 
 require golang.org/x/sys v0.4.0 // indirect
-=======
-require (
-	bazil.org/fuse v0.0.0-20230120002735-62a210ff1fd5 
-	golang.org/x/sys v0.4.0 
-)
->>>>>>> efbb73ba1aa4c0c6df79939f8418376c7d4f197f

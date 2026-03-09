@@ -3,10 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+	"os/exec"
+	"os/signal"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
-	radFS "github.com/acmpesuecc/radFS/fs"
+	radFS "github.com/acmpesuecc/radFS/internal/fs"
 )
 
 type config struct {
@@ -29,9 +32,7 @@ func main() {
 		mount: flag.Arg(0),
 	}
 
-	if cfg.debug {
-		fmt.Println("debug mode enabled")
-	}
+	fmt.Println("debug mode enabled")
 
 	//c is a fuse connection to dev/fuse
 	c, err := fuse.Mount(cfg.mount)
@@ -40,17 +41,35 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+	defer c.Close()
 
-	defer c.Close() //delay execution of Close
+	serv := make(chan error, 1)
+	go func() {
+		serv <- fs.Serve(c, &radFS.FS{Debug: cfg.debug})
+	}()
 
-	err = fs.Serve(c, radFS.FS{}) //starts listening for FS reqs
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt)
 
-	if err != nil {
-		fmt.Println(err)
+	<-signals
+	fmt.Println("Interrupt received: shutting down.")
+	unmount_err := fuse.Unmount(cfg.mount)
+
+	if unmount_err != nil {
+
+		fmt.Println("Lazy Unmounting")
+		command := exec.Command("fusermount", "-u", "-z", cfg.mount)
+		cmd_err := command.Run()
+
+		if cmd_err != nil {
+			fmt.Println(cmd_err)
+			return
+		}
+
+		return
 	}
 
-	// <-c.Ready
-	// if err := c.MountError; err != nil {
-	// 	fmt.Println(err)
-	// }
+	if err := <-serv; err != nil {
+		fmt.Println("Serve error:", err)
+	}
 }
