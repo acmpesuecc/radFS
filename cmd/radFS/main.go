@@ -32,7 +32,9 @@ func main() {
 		mount: flag.Arg(0),
 	}
 
-	fmt.Println("debug mode enabled")
+	if cfg.debug {
+		fmt.Println("debug mode enabled")
+	}
 
 	//c is a fuse connection to dev/fuse
 	c, err := fuse.Mount(cfg.mount)
