@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -18,8 +19,7 @@ type config struct {
 }
 
 func main() {
-
-	debug := flag.Bool("d", false, "enable debug mode")
+	debug := flag.Bool("d", false, "Enable debug mode")
 	flag.Parse()
 
 	if flag.NArg() < 1 {
@@ -33,14 +33,14 @@ func main() {
 	}
 
 	if cfg.debug {
-		fmt.Println("debug mode enabled")
+		log.Println("Debug mode enabled")
 	}
 
 	//c is a fuse connection to dev/fuse
 	c, err := fuse.Mount(cfg.mount)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 	defer c.Close()
@@ -54,17 +54,16 @@ func main() {
 	signal.Notify(signals, os.Interrupt)
 
 	<-signals
-	fmt.Println("Interrupt received: shutting down.")
+	log.Println("Interrupt received: shutting down.")
 	unmount_err := fuse.Unmount(cfg.mount)
 
 	if unmount_err != nil {
-
-		fmt.Println("Lazy Unmounting")
+		log.Println("Lazy Unmounting")
 		command := exec.Command("fusermount", "-u", "-z", cfg.mount)
 		cmd_err := command.Run()
 
 		if cmd_err != nil {
-			fmt.Println(cmd_err)
+			log.Println(cmd_err)
 			return
 		}
 
@@ -72,6 +71,6 @@ func main() {
 	}
 
 	if err := <-serv; err != nil {
-		fmt.Println("Serve error:", err)
+		log.Println("Serve error:", err)
 	}
 }
