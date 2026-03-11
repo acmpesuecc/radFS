@@ -2,7 +2,7 @@ package fs
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"syscall"
 
@@ -10,9 +10,10 @@ import (
 	"bazil.org/fuse/fs"
 )
 
-func (f *FS) DebugPrint(v ...any) {
+func (f *FS) DebugPrint(msg string, v ...any) {
 	if f.Debug {
-		log.Println(v...)
+		logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+		logger.Info(msg, v...)
 	}
 }
 
@@ -24,7 +25,7 @@ func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 }
 
 func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
-	d.fs.DebugPrint("radfs LOOKUP : ", name, "\n")
+	d.fs.DebugPrint("LOOKUP", "fetching", name)
 
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -39,7 +40,7 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 }
 
 func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
-	d.fs.DebugPrint("radfs READDIR Inode : ", d.inode, "\n")
+	d.fs.DebugPrint("READDIR", "inode", d.inode)
 
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -63,12 +64,12 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 
 func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error) {
 	d.fs.DebugPrint(
-		"radfs MKDIR : ", req.ID,
-		", Creating directory : ", req.Name,
-		", NodeID : ", req.Node,
-		", With mode : ", req.Mode,
-		", Request PID : ", req.Pid,
-		"\n",
+		"MKDIR",
+		"ID", req.ID,
+		"Creating directory", req.Name,
+		"NodeID", req.Node,
+		"With mode", req.Mode,
+		"Request PID", req.Pid,
 	)
 
 	d.mu.Lock()
@@ -86,13 +87,13 @@ func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error
 
 func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (fs.Node, fs.Handle, error) {
 	d.fs.DebugPrint(
-		"radfs CREATE : ", req.ID,
-		", Creating file : ", req.Name,
-		", NodeID : ", req.Node,
-		", With mode : ", req.Mode,
-		", Request PID : ", req.Pid,
-		", Access mode : ", req.Flags,
-		"\n",
+		"CREATE",
+		"ID", req.ID,
+		"Creating file", req.Name,
+		"NodeID", req.Node,
+		"With mode", req.Mode,
+		"Request PID", req.Pid,
+		"Access mode", req.Flags,
 	)
 
 	d.mu.Lock()
@@ -106,12 +107,12 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 
 func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 	d.fs.DebugPrint(
-		"radfs REMOVE : ", req.ID,
-		", Is this a directory? : ", req.Dir,
-		", Removing file/dir : ", req.Name,
-		", NodeID : ", req.ID,
-		", Request PID : ", req.Pid,
-		"\n",
+		"REMOVE",
+		"ID", req.ID,
+		"Is this a directory?", req.Dir,
+		"Removing file/dir", req.Name,
+		"NodeID", req.ID,
+		"Request PID", req.Pid,
 	)
 
 	d.mu.Lock()
