@@ -79,7 +79,17 @@ func insert(n *Node, value string, key []byte, depth int) *Node {
 
 		} else {
 			leaf := fetchleaf(n)
-			n.innerNode.meta.prefix = deepcopy(leaf.leaf.key[depth+p+1 : depth+p+1+maxprefixlen])
+			leafKey := leaf.leaf.key
+			start := depth + p + 1
+			if start >= len(leafKey) {
+				n.innerNode.meta.prefix = []byte{}
+			} else {
+				end := start + maxprefixlen
+				if end > len(leafKey) {
+					end = len(leafKey)
+				}
+				n.innerNode.meta.prefix = deepcopy(leafKey[start:end])
+			}
 		}
 
 		return new_node
