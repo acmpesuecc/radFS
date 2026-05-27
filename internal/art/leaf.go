@@ -4,10 +4,10 @@ package art
 
 type leaf struct {
 	key    []byte
-	values string
+	values interface{}
 }
 
-func newleaf(value string, key []byte) *Node {
+func newleaf(value interface{}, key []byte) *Node {
 	return &Node{
 		leaf: &leaf{key: key, values: value},
 	}

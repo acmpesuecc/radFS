@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	t := &art.Tree{}
+	t := art.New()
 
 	fmt.Println("====== PHASE 1: STRESS TESTING GROWTH (4 -> 16 -> 48 -> 256) ======")
 

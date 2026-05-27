@@ -10,11 +10,11 @@ func (t *Tree) Root() *Node {
 	return t.root
 }
 
-func (t *Tree) Insert(key []byte, value string) {
+func (t *Tree) Insert(key []byte, value interface{}) {
 	t.root = insert(t.root, value, key, 0)
 }
 
-func (t *Tree) Search(key []byte) (string, bool) {
+func (t *Tree) Search(key []byte) (interface{}, bool) {
 	leaf := search(t.root, key, 0) // start from root and depth 0
 	if leaf != nil && isleaf(leaf) {
 		return leaf.leaf.values, true //Node->innerleaf->values
@@ -46,4 +46,13 @@ func GetNodeTypeName(n *Node) string {
 
 	types := []string{"Node4", "Node16", "Node48", "Node256"}
 	return types[n.innerNode.nodeType]
+}
+func (t *Tree) ForEach(fn func([]byte, interface{})) {
+	traverse(t.root, 0, fn)
+}
+func New() *Tree {
+	return &Tree{}
+}
+func (t *Tree) Empty() bool {
+	return t.root == nil
 }

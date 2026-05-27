@@ -8,6 +8,7 @@ import (
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
+	"github.com/acmpesuecc/radFS/internal/art"
 )
 
 func (f *FS) DebugPrint(msg string, v ...any) {
@@ -27,37 +28,37 @@ func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	d.fs.DebugPrint("LOOKUP", "fetching", name)
 
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	d.mu.RLock()
+	defer d.mu.RUnlock()
 
-	node, ok := d.Nodes[name]
+	v, ok := d.tree.Search([]byte(name))
 
 	if !ok {
 		return nil, syscall.ENOENT
 	}
 
-	return node, nil
+	return v.(fs.Node), nil
 }
 
 func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	d.fs.DebugPrint("READDIR", "inode", d.inode)
 
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	d.mu.RLock()
+	defer d.mu.RUnlock()
 
 	var entries []fuse.Dirent
-	for name, node := range d.Nodes {
-		var dt fuse.DirentType
-
-		switch node.(type) {
+	d.tree.ForEach(func(b []byte, i interface{}) { //traverses tree and appends the dirent to entries
+		name := string(b)
+		var dtype fuse.DirentType
+		switch i.(type) {
+		case *File:
+			dtype = fuse.DT_File
 		case *Dir:
-			dt = fuse.DT_Dir
-		default:
-			dt = fuse.DT_File
-		}
+			dtype = fuse.DT_Dir
 
-		entries = append(entries, fuse.Dirent{Name: name, Type: dt})
-	}
+		}
+		entries = append(entries, fuse.Dirent{Name: name, Type: dtype})
+	})
 
 	return entries, nil
 }
@@ -75,12 +76,16 @@ func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	if _, exists := d.Nodes[req.Name]; exists {
+	if _, exists := d.tree.Search([]byte(req.Name)); exists {
 		return nil, syscall.EEXIST
 	}
 
-	newDir := &Dir{inode: nextInode(), Nodes: make(map[string]fs.Node), fs: d.fs}
-	d.Nodes[req.Name] = newDir
+	newDir := &Dir{
+		inode: nextInode(),
+		tree:  art.New(),
+		fs:    d.fs,
+	}
+	d.tree.Insert([]byte(req.Name), newDir)
 
 	return newDir, nil
 }
@@ -99,8 +104,14 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
+	if _, exist := d.tree.Search([]byte(req.Name)); exist {
+		return nil, nil, syscall.EEXIST
+
+	}
+
 	f := &File{inode: nextInode(), data: []byte{}, mode: uint32(req.Mode)}
-	d.Nodes[req.Name] = f
+
+	d.tree.Insert([]byte(req.Name), f)
 
 	return f, f, nil
 }
@@ -118,18 +129,21 @@ func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	if _, exists := d.Nodes[req.Name]; !exists {
+	v, exist := d.tree.Search([]byte(req.Name))
+
+	if !exist {
 		return syscall.ENOENT
 	}
 
-	if dir, flag := d.Nodes[req.Name].(*Dir); flag {
-		if len(dir.Nodes) > 0 {
+	if dir, ok := v.(*Dir); ok {
+		dir.mu.RLock()
+		defer dir.mu.RUnlock()
+		if !dir.tree.Empty() {
 			return syscall.ENOTEMPTY
 		}
 	}
-	
 
-	delete(d.Nodes, req.Name)
+	d.tree.Delete([]byte(req.Name))
 
 	return nil
 }

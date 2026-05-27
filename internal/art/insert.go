@@ -1,6 +1,6 @@
 package art
 
-func insert(n *Node, value string, key []byte, depth int) *Node {
+func insert(n *Node, value interface{}, key []byte, depth int) *Node {
 
 	if n == nil {
 		return newleaf(value, key)
