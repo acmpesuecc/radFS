@@ -54,7 +54,7 @@ func main() {
 	signal.Notify(signals, os.Interrupt)
 
 	<-signals
-	log.Println("Interrupt received: shutting down.")
+	log.Println(" Interrupt received: shutting down.")
 	unmount_err := fuse.Unmount(cfg.mount)
 
 	if unmount_err != nil {
