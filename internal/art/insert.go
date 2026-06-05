@@ -1,11 +1,20 @@
 package art
 
+import (
+	"bytes"
+)
+
 func insert(n *Node, value interface{}, key []byte, depth int) *Node {
 
 	if n == nil {
 		return newleaf(value, key)
 	}
 	if isleaf(n) {
+		if bytes.Equal(n.leaf.key, key) { // insert is called on same key update
+			n.leaf.values = value
+			return n
+		}
+
 		new_node := newNode4()
 		oldkey := n.leaf.key
 		i := depth

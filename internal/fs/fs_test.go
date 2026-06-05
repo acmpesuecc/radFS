@@ -258,6 +258,26 @@ func TestReadDirAll_ContainsHello(t *testing.T) {
 		t.Error("ReadDirAll missing hello.txt entry")
 	}
 }
+func TestRename(t *testing.T) {
+	d := rootDir(t)
+	_, _, err := d.Create(ctx(), &fuse.CreateRequest{Name: "old.txt", Mode: 0o666}, &fuse.CreateResponse{})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	err = d.Rename(ctx(), &fuse.RenameRequest{OldName: "old.txt", NewName: "new.txt"}, d)
+	if err != nil {
+		t.Fatalf("Rename: %v", err)
+	}
+	if _, err := d.Lookup(ctx(), "old.txt"); err == nil {
+		t.Fatal("old text exists")
+
+	}
+	if _, err := d.Lookup(ctx(), "new.txt"); err != nil {
+		t.Fatal("new text doesnt exists")
+
+	}
+
+}
 
 var _ fs.Node = (*File)(nil)
 var _ fs.Node = (*Dir)(nil)
