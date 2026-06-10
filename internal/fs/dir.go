@@ -56,15 +56,15 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	d.fs.DebugPrint("LOOKUP", "fetching", name)
 
 	d.mu.RLock()
-	defer d.mu.RUnlock()
 
 	v, ok := d.tree.Search([]byte(name))
-
+	d.mu.RUnlock()
 	if !ok {
 		return nil, syscall.ENOENT
 	}
+	d.mu.Lock()
 	d.atime = time.Now()
-
+	d.mu.Unlock()
 	return v.(fs.Node), nil
 
 }
@@ -86,6 +86,7 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 			dtype = fuse.DT_Dir
 
 		}
+
 		entries = append(entries, fuse.Dirent{Name: name, Type: dtype})
 	})
 

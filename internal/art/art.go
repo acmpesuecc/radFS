@@ -19,7 +19,7 @@ func (t *Tree) Search(key []byte) (interface{}, bool) {
 	if leaf != nil && isleaf(leaf) {
 		return leaf.leaf.values, true //Node->innerleaf->values
 	}
-	return "", false
+	return nil, false
 }
 func (t *Tree) Delete(key []byte) bool {
 	if t.root == nil {

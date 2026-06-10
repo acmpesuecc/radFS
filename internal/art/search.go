@@ -1,12 +1,16 @@
 package art
 
+import (
+	"bytes"
+)
+
 func search(n *Node, key []byte, depth int) *Node {
 	if n == nil {
 		return nil
 	}
 
 	if isleaf(n) {
-		if string(n.leaf.key) == string(key) {
+		if bytes.Equal(n.leaf.key, key) {
 			return n
 		}
 		return nil
