@@ -10,8 +10,8 @@ import (
 )
 
 func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
-	f.mu.Lock()
-	defer f.mu.Unlock()
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	a.Inode = f.inode
 	a.Mode = os.FileMode(f.mode)
 	a.Size = uint64(len(f.data))
@@ -56,7 +56,7 @@ func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.Wri
 
 	// Grow the buffer if needed
 	if end > int64(len(f.data)) {
-		newData := make([]byte, end)
+		newData := make([]byte, int(end))
 		copy(newData, f.data)
 		f.data = newData
 	}
@@ -85,7 +85,7 @@ func (f *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse
 			f.data = f.data[:req.Size]
 			f.ctime = time.Now() // cuz creating file here
 		} else {
-			newData := make([]byte, req.Size)
+			newData := make([]byte, int(req.Size))
 			copy(newData, f.data)
 			f.data = newData
 		}

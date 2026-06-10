@@ -35,7 +35,7 @@ func TestRoot_ReturnsDir(t *testing.T) {
 
 func TestRoot_HasHelloTxt(t *testing.T) {
 	d := rootDir(t)
-	if _, ok := d.Nodes["hello.txt"]; !ok {
+	if _, ok := d.tree.Search([]byte("hello.txt")); !ok {
 		t.Error("root dir missing hello.txt")
 	}
 }
@@ -79,7 +79,7 @@ func TestCreate_NewFile(t *testing.T) {
 		t.Fatal("Create returned nil handle")
 	}
 
-	if _, ok := d.Nodes["new.txt"]; !ok {
+	if _, ok := d.tree.Search([]byte("new.txt")); !ok {
 		t.Error("new.txt not found in dir after Create")
 	}
 }
@@ -107,7 +107,7 @@ func TestMkdir_NewDir(t *testing.T) {
 	if node == nil {
 		t.Fatal("Mkdir returned nil node")
 	}
-	if _, ok := d.Nodes["subdir"]; !ok {
+	if _, ok := d.tree.Search([]byte("subdir")); !ok {
 		t.Error("subdir not found in dir after Mkdir")
 	}
 }
@@ -189,7 +189,7 @@ func TestRemove_ExistingFile(t *testing.T) {
 	if err := d.Remove(ctx(), req); err != nil {
 		t.Fatalf("Remove: %v", err)
 	}
-	if _, ok := d.Nodes["hello.txt"]; ok {
+	if _, ok := d.tree.Search([]byte("hello.txt")); ok {
 		t.Error("hello.txt still present after Remove")
 	}
 }
@@ -257,6 +257,26 @@ func TestReadDirAll_ContainsHello(t *testing.T) {
 	if !found {
 		t.Error("ReadDirAll missing hello.txt entry")
 	}
+}
+func TestRename(t *testing.T) {
+	d := rootDir(t)
+	_, _, err := d.Create(ctx(), &fuse.CreateRequest{Name: "old.txt", Mode: 0o666}, &fuse.CreateResponse{})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	err = d.Rename(ctx(), &fuse.RenameRequest{OldName: "old.txt", NewName: "new.txt"}, d)
+	if err != nil {
+		t.Fatalf("Rename: %v", err)
+	}
+	if _, err := d.Lookup(ctx(), "old.txt"); err == nil {
+		t.Fatal("old text exists")
+
+	}
+	if _, err := d.Lookup(ctx(), "new.txt"); err != nil {
+		t.Fatal("new text doesnt exists")
+
+	}
+
 }
 
 var _ fs.Node = (*File)(nil)
