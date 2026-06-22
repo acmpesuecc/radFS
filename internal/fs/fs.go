@@ -24,37 +24,54 @@ func nextInode() uint64 {
 }
 
 func (f *FS) Root() (fs.Node, error) {
-	return &Dir{
+
+	content := []byte("Hello from radFS!\n")
+	blocks := [][]byte{}
+	for i := 0; i < len(content); i += blockSize {
+		end := min(i+blockSize, len(content))
+		block := make([]byte, blockSize)
+		copy(block, content[i:end])
+		blocks = append(blocks, block)
+	}
+
+	root := &Dir{
 		inode: 1,
 		Nodes: map[string]fs.Node{
+
 			"hello.txt": &File{
-				inode: nextInode(),
-				data:  []byte("Hello from radFS!\n"),
-				mode:  0o666,
-				atime: time.Now(),
-				mtime: time.Now(),
-				ctime: time.Now(),
+				inode:  nextInode(),
+				blocks: blocks,
+				size:   uint64(len(content)),
+				mode:   0o666,
+				atime:  time.Now(),
+				mtime:  time.Now(),
+				ctime:  time.Now(),
+				uid:    uint32(os.Getuid()),
+				gid:    uint32(os.Getgid()),
 			},
 		},
 		fs:    f,
 		atime: time.Now(),
 		mtime: time.Now(),
 		ctime: time.Now(),
+		uid:    uint32(os.Getuid()),
+		gid:    uint32(os.Getgid()),
 	}
 
 	return root, nil
 }
 
 type File struct {
-	mu    sync.Mutex
-	inode uint64
-	data  []byte
-	mode  uint32
-	atime time.Time // read
-	mtime time.Time // write | truncate
-	ctime time.Time // metadata (setattr)
-	uid   uint32
-	gid   uint32
+	mu     sync.Mutex
+	inode  uint64
+	blocks [][]byte
+	size   uint64
+	mode   uint32
+	atime  time.Time // read
+	mtime  time.Time // write | truncate
+	ctime  time.Time // metadata (setattr)
+	uid    uint32
+	gid    uint32
 }
 
 type Dir struct {
@@ -65,4 +82,6 @@ type Dir struct {
 	atime time.Time
 	mtime time.Time
 	ctime time.Time
+	uid   uint32
+	gid   uint32
 }

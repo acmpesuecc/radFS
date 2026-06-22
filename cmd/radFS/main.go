@@ -37,7 +37,8 @@ func main() {
 	}
 
 	//c is a fuse connection to dev/fuse
-	c, err := fuse.Mount(cfg.mount)
+	//allowother() allows any user to access the point moint -> used in chown
+	c, err := fuse.Mount(cfg.mount, fuse.AllowOther()) 
 
 	if err != nil {
 		log.Println(err)
