@@ -1,5 +1,7 @@
 package art
 
+import "sync"
+
 // TODO: Interfaces and shared node header (meta)
 
 type NodeType int
@@ -22,6 +24,7 @@ const (
 type Node struct {
 	innerNode *innerNode
 	leaf      *leaf
+	mu        sync.RWMutex
 }
 
 type innerNode struct {

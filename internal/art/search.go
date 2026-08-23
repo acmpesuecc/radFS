@@ -1,40 +1,61 @@
 package art
 
+import (
+	"bytes"
+)
+
+// hand over hand locking search function -> lock the current node, find the next node, lock it, then unlock the current node
 func search(n *Node, key []byte, depth int) *Node {
-	if n == nil {
-		return nil
-	}
+	cur := n
+	cur.mu.RLock()
 
-	if isleaf(n) {
-		if string(n.leaf.key) == string(key) {
-			return n
-		}
-		return nil
-	}
-
-	if n.innerNode.meta.prefixlen > 0 {
-		p := checkprefix(n, key, depth)
-
-		if p != n.innerNode.meta.prefixlen {
+	for cur != nil {
+		if isleaf(cur) {
+			if bytes.Equal(cur.leaf.key, key) {
+				cur.mu.RUnlock()
+				return cur
+			}
+			cur.mu.RUnlock()
 			return nil
 		}
-		depth += n.innerNode.meta.prefixlen
-	}
 
-	//  KEY EXHAUSTION CHECK (The Fix)
-	// If we've consumed the entire key, the value must be in this inner node's leaf
-	if depth == len(key) {
-		if n.innerNode.leaf != nil {
-			return n.innerNode.leaf
+		if cur.innerNode.meta.prefixlen > 0 {
+			p := checkprefix(cur, key, depth)
+
+			if p != cur.innerNode.meta.prefixlen {
+				cur.mu.RUnlock()
+
+				return nil
+			}
+			depth += cur.innerNode.meta.prefixlen
 		}
-		return nil
-	}
 
-	k := key[depth]
-	next, _ := findchild(k, n)
-	if next != nil {
-		return search(next, key, depth+1)
-	}
+		//	KEY EXHAUSTION CHECK (The Fix)
+		//
+		// If we've consumed the entire key, the value must be in this inner node's leaf
+		if depth == len(key) {
+			if cur.innerNode.leaf != nil {
+				cur.mu.RUnlock()
+				return cur.innerNode.leaf
+			}
+			cur.mu.RUnlock()
+			return nil
+		}
 
+		k := key[depth]
+		next, _ := findchild(k, cur)
+		if next == nil {
+			cur.mu.RUnlock()
+
+			return nil
+		}
+		next.mu.RLock()
+		cur.mu.RUnlock()
+
+		cur = next
+		depth++
+
+	}
 	return nil
+
 }

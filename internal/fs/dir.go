@@ -209,10 +209,17 @@ func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Nod
 		d.mu.Lock()
 		defer d.mu.Unlock()
 	} else {
-		d.mu.Lock()
-		newParent.mu.Lock()
-		defer d.mu.Unlock()
-		defer newParent.mu.Unlock()
+		first := d
+		second := newParent
+		if first.inode > second.inode {
+			first, second = second, first
+
+		}
+		first.mu.Lock()
+		second.mu.Lock()
+
+		defer second.mu.Unlock()
+		defer first.mu.Unlock()
 	}
 
 	//checks if source exists
@@ -220,7 +227,6 @@ func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Nod
 	if !exists {
 		return syscall.ENOENT
 	}
-
 	// if destination exists → overwrite
 	if existing, exists := newParent.tree.Search([]byte(req.NewName)); exists {
 		// if it's a directory, check if empty
