@@ -9,6 +9,7 @@ import (
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
+	"github.com/acmpesuecc/radFS/internal/art"
 )
 
 func (f *FS) DebugPrint(msg string, v ...any) {
@@ -54,39 +55,39 @@ func (d *Dir) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse.
 func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	d.fs.DebugPrint("LOOKUP", "fetching", name)
 
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	d.mu.RLock()
+	defer d.mu.RUnlock()
 
-	node, ok := d.Nodes[name]
+	v, ok := d.tree.Search([]byte(name))
 
 	if !ok {
 		return nil, syscall.ENOENT
 	}
-
 	d.atime = time.Now()
 
-	return node, nil
+	return v.(fs.Node), nil
+
 }
 
 func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	d.fs.DebugPrint("READDIR", "inode", d.inode)
 
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	d.mu.RLock()
+	defer d.mu.RUnlock()
 
 	var entries []fuse.Dirent
-	for name, node := range d.Nodes {
-		var dt fuse.DirentType
-
-		switch node.(type) {
+	d.tree.ForEach(func(b []byte, i interface{}) { //traverses tree and appends the dirent to entries
+		name := string(b)
+		var dtype fuse.DirentType
+		switch i.(type) {
+		case *File:
+			dtype = fuse.DT_File
 		case *Dir:
-			dt = fuse.DT_Dir
-		default:
-			dt = fuse.DT_File
-		}
+			dtype = fuse.DT_Dir
 
-		entries = append(entries, fuse.Dirent{Name: name, Type: dt})
-	}
+		}
+		entries = append(entries, fuse.Dirent{Name: name, Type: dtype})
+	})
 
 	d.atime = time.Now()
 
@@ -106,22 +107,19 @@ func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	if _, exists := d.Nodes[req.Name]; exists {
+	if _, exists := d.tree.Search([]byte(req.Name)); exists {
 		return nil, syscall.EEXIST
 	}
 
 	newDir := &Dir{
 		inode: nextInode(),
-		Nodes: make(map[string]fs.Node),
+		tree:  art.New(),
 		fs:    d.fs,
 		atime: time.Now(),
-		ctime: time.Now(),
 		mtime: time.Now(),
+		ctime: time.Now(),
 	}
-	d.Nodes[req.Name] = newDir
-
-	d.mtime = time.Now()
-	d.ctime = time.Now()
+	d.tree.Insert([]byte(req.Name), newDir)
 
 	return newDir, nil
 }
@@ -140,22 +138,16 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	f := &File{
-		inode: nextInode(),
-		data:  []byte{},
-		mode:  uint32(req.Mode),
-		atime: time.Now(),
-		ctime: time.Now(),
-		mtime: time.Now(),
-	}
-
-	if _, exists := d.Nodes[req.Name]; exists { // checking for dupes
+	if _, exist := d.tree.Search([]byte(req.Name)); exist {
 		return nil, nil, syscall.EEXIST
-	}
-	d.Nodes[req.Name] = f
 
-	d.mtime = time.Now()
-	d.ctime = time.Now()
+	}
+
+	f := &File{inode: nextInode(), data: []byte{}, mode: uint32(req.Mode), atime: time.Now(),
+		ctime: time.Now(),
+		mtime: time.Now()}
+
+	d.tree.Insert([]byte(req.Name), f)
 
 	return f, f, nil
 }
@@ -173,17 +165,21 @@ func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	if _, exists := d.Nodes[req.Name]; !exists {
+	v, exist := d.tree.Search([]byte(req.Name))
+
+	if !exist {
 		return syscall.ENOENT
 	}
 
-	if dir, flag := d.Nodes[req.Name].(*Dir); flag {
-		if len(dir.Nodes) > 0 {
+	if dir, ok := v.(*Dir); ok {
+		dir.mu.RLock() // we are reading another dir with Empty() , multiple processes may read
+		defer dir.mu.RUnlock()
+		if !dir.tree.Empty() {
 			return syscall.ENOTEMPTY
 		}
 	}
 
-	delete(d.Nodes, req.Name)
+	d.tree.Delete([]byte(req.Name))
 
 	d.mtime = time.Now()
 	d.ctime = time.Now()
@@ -213,36 +209,43 @@ func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Nod
 		d.mu.Lock()
 		defer d.mu.Unlock()
 	} else {
-		d.mu.Lock()
-		newParent.mu.Lock()
-		defer d.mu.Unlock()
-		defer newParent.mu.Unlock()
+		first := d
+		second := newParent
+		if first.inode > second.inode {
+			first, second = second, first
+
+		}
+		first.mu.Lock()
+		second.mu.Lock()
+
+		defer second.mu.Unlock()
+		defer first.mu.Unlock()
 	}
 
 	//checks if source exists
-	node, exists := d.Nodes[req.OldName]
+	node, exists := d.tree.Search([]byte(req.OldName))
 	if !exists {
 		return syscall.ENOENT
 	}
-
-	
-	// if destination exists → overwrite 
-if existing, exists := newParent.Nodes[req.NewName]; exists {
-    // if it's a directory, check if empty
-    if dir, ok := existing.(*Dir); ok {
-        if len(dir.Nodes) > 0 {
-            return syscall.ENOTEMPTY
-        }
-    }
-    delete(newParent.Nodes, req.NewName)
-}
+	// if destination exists → overwrite
+	if existing, exists := newParent.tree.Search([]byte(req.NewName)); exists {
+		// if it's a directory, check if empty
+		if dir, ok := existing.(*Dir); ok {
+			dir.mu.RLock()
+			defer dir.mu.RUnlock()
+			if !dir.tree.Empty() {
+				return syscall.ENOTEMPTY
+			}
+		}
+		newParent.tree.Delete([]byte(req.NewName))
+	}
 
 	//removes from old
-	delete(d.Nodes, req.OldName)
+
+	d.tree.Delete([]byte(req.OldName))
 
 	//adds to new
-	newParent.Nodes[req.NewName] = node
 
+	newParent.tree.Insert([]byte(req.NewName), node)
 	return nil
 }
-
