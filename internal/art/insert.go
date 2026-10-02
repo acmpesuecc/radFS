@@ -1,20 +1,38 @@
 package art
 
+import (
+	"bytes"
+)
+
 func insert(n *Node, value interface{}, key []byte, depth int) *Node {
 
 	if n == nil {
 
 		return newleaf(value, key)
 	}
+	var parent *Node
+	parent = nil
+	parentbyte := byte(0)
+
 	cur := n
+
 	cur.mu.Lock()
 
 	for {
 
 		if isleaf(cur) {
+
 			new_node := newNode4()
 			oldkey := cur.leaf.key
 			i := depth
+			if bytes.Equal(oldkey, key) { // if the key already exists, update the value
+				cur.leaf.values = value
+				if parent != nil {
+					parent.mu.Unlock()
+				}
+				cur.mu.Unlock()
+				return n
+			}
 
 			for i < len(oldkey) && i < len(key) && oldkey[i] == key[i] {
 				prefix_index := i - depth
@@ -43,8 +61,14 @@ func insert(n *Node, value interface{}, key []byte, depth int) *Node {
 				new_node = addchild(new_node, oldkey[depth], cur)
 
 			}
-			cur.mu.Unlock()
+			if parent != nil {
+				parent = addchild(parent, parentbyte, new_node)
+				parent.mu.Unlock()
+				cur.mu.Unlock()
 
+				return n
+			}
+			cur.mu.Unlock()
 			return new_node
 
 		}
@@ -89,29 +113,47 @@ func insert(n *Node, value interface{}, key []byte, depth int) *Node {
 				leaf := fetchleaf(cur)
 				cur.innerNode.meta.prefix = deepcopy(leaf.leaf.key[depth+p+1 : depth+p+1+maxprefixlen])
 			}
-			cur.mu.Unlock()
+			if parent != nil {
+				parent = addchild(parent, parentbyte, new_node)
+				parent.mu.Unlock()
+				cur.mu.Unlock()
 
+				return n
+			}
+			cur.mu.Unlock()
 			return new_node
 		}
 
 		depth += cur.innerNode.meta.prefixlen
 		if depth == len(key) {
 			cur.innerNode.leaf = newleaf(value, key)
+			if parent != nil {
+				parent.mu.Unlock()
+			}
 			cur.mu.Unlock()
-			return cur
+			return n
 		}
 		next, _ := findchild(key[depth], cur)
 		if next == nil {
-			oldcur := cur
-
 			newcur := addchild(cur, key[depth], newleaf(value, key))
-			oldcur.mu.Unlock()
+			if parent != nil {
+				addchild(parent, parentbyte, newcur)
+				parent.mu.Unlock()
+				cur.mu.Unlock()
+				return n
+			}
+			cur.mu.Unlock()
 			return newcur
-
 		}
 		next.mu.Lock()
-		cur.mu.Unlock()
+		if parent != nil {
+			parent.mu.Unlock()
+		}
+
+		parent = cur
 		cur = next
+		parentbyte = key[depth] //stores the parent byte to be used in addchild when we need to replace the child
+
 		depth++
 
 	}
