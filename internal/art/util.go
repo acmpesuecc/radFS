@@ -143,6 +143,7 @@ func removechild(n *Node, k byte) *Node {
 		}
 		in.keys[in.num_children-1] = 0
 		in.children[in.num_children-1] = nil
+		in.num_children--
 
 	case Node48:
 
@@ -150,14 +151,17 @@ func removechild(n *Node, k byte) *Node {
 		if idx > 0 {
 			in.keys[k] = 0
 			in.children[idx-1] = nil
+			in.num_children--
 		}
 
 	case Node256:
+		if in.children[k] != nil {
+			in.children[k] = nil
+			in.num_children--
 
-		in.children[k] = nil
+		}
+
 	}
-
-	in.num_children--
 
 	if shouldShrink(n) {
 		return shrink(n)

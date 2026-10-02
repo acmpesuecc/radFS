@@ -11,16 +11,22 @@ func insert(n *Node, value interface{}, key []byte, depth int) *Node {
 		return newleaf(value, key)
 	}
 	var parent *Node
-	parent = nil
 	parentbyte := byte(0)
 
 	cur := n
-
 	cur.mu.Lock()
 
 	for {
 
 		if isleaf(cur) {
+			if bytes.Equal(cur.leaf.key, key) { // exact key match: update in place
+				cur.leaf.values = value
+				if parent != nil {
+					parent.mu.Unlock()
+				}
+				cur.mu.Unlock()
+				return n
+			}
 
 			new_node := newNode4()
 			oldkey := cur.leaf.key

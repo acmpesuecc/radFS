@@ -4,9 +4,11 @@ import (
 	"bytes"
 )
 
-// hand over hand locking search function -> lock the current node, find the next node, lock it, then unlock the current node
 func search(n *Node, key []byte, depth int) *Node {
 	cur := n
+	if cur == nil {
+		return nil
+	}
 	cur.mu.RLock()
 
 	for cur != nil {

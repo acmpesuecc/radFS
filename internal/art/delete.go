@@ -1,12 +1,16 @@
 package art
 
+import (
+	"bytes"
+)
+
 func deletekey(n *Node, key []byte, depth int) (*Node, bool) {
 	if n == nil {
 		return nil, false
 	}
 
 	if isleaf(n) {
-		if string(n.leaf.key) == string(key) {
+		if bytes.Equal(n.leaf.key, key) {
 			return nil, true
 		}
 		return n, false
