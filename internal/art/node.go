@@ -36,6 +36,7 @@ type innerNode struct {
 	num_children int
 
 	meta meta
+	freeMask uint64 // bitmask to track free slots in Node48
 }
 
 type meta struct {
