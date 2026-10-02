@@ -219,7 +219,7 @@ func grow(n *Node) *Node {
 
 		}
 		n48.innerNode.num_children = index
-		n48.innerNode.freeMask = node48FullMask &^ ((uint64(1) << uint(index)) - 1) //slots from 0 to index-1 are occupied, so mark them as occupied in freeMask
+		n48.innerNode.freeMask = node48FullMask &^ ((uint64(1) << uint(index)) - 1) //slots from 0 to index-1 are occupied (mark them as occupied in freeMask)
 		return n48
 
 	case Node48:
@@ -300,18 +300,16 @@ func shrink(n *Node) *Node {
 			}
 		}
 		n48.innerNode.num_children = count
-		n48.innerNode.freeMask = node48FullMask &^ ((uint64(1) << uint(count)) - 1) //slots from 0 to count-1 are occupied, so mark them as occupied in freeMask
+		n48.innerNode.freeMask = node48FullMask &^ ((uint64(1) << uint(count)) - 1) //slots from 0 to count-1 are occupied (mark them as occupied in freeMask)
 		return n48
 	}
 	return n
 }
 
 func copymeta(n *Node, new_node *Node) {
-
 	new_node.innerNode.meta.prefixlen = n.innerNode.meta.prefixlen
-	new_node.innerNode.meta.prefix = deepcopy(n.innerNode.meta.prefix[:min(n.innerNode.meta.prefixlen, maxprefixlen)])
+	copy(new_node.innerNode.meta.prefix, n.innerNode.meta.prefix) // both are maxprefixlen long
 	new_node.innerNode.leaf = n.innerNode.leaf
-
 }
 
 func fetchleaf(n *Node) *Node {
@@ -347,10 +345,3 @@ func fetchleaf(n *Node) *Node {
 
 }
 
-func deepcopy(source []byte) []byte {
-
-	desarr := make([]byte, maxprefixlen)
-	copy(desarr, source)
-	return desarr
-
-}
