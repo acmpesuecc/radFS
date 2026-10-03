@@ -256,8 +256,30 @@ func shrink(n *Node) *Node {
 
 			return nil
 		}
+		// when old node has only one child and no leaf, we can merge the prefix of the old node with the edge byte and the prefix of the child node into the child node. This reduces the height of the tree and improves search performance.
+		// eg ant, ante then anteater , delete anteater, then the prefix of ante and the edge byte 'e' and the prefix of eater can be merged into eater node. This reduces the height of the tree and improves search performance.
+		//Fold n's prefix + edgeByte + child's existing prefix into child
 		if in.num_children == 1 && in.leaf == nil {
-			return in.children[0]
+			child := in.children[0]
+			edgebyte := in.keys[0]
+			if isleaf(child) {
+				return child
+			}
+			oldchildprefixlen := child.innerNode.meta.prefixlen
+			new_prefix := make([]byte, 0, maxprefixlen)
+			new_prefix = append(new_prefix, in.meta.prefix[:min(in.meta.prefixlen, maxprefixlen)]...)
+			if len(new_prefix) < maxprefixlen {
+				new_prefix = append(new_prefix, edgebyte)
+			}
+			if len(new_prefix) < maxprefixlen {
+				remaining := maxprefixlen - len(new_prefix)
+				new_prefix = append(new_prefix, child.innerNode.meta.prefix[:min(remaining, oldchildprefixlen)]...)
+			}
+
+			child.innerNode.meta.prefix = new_prefix
+			child.innerNode.meta.prefixlen = in.meta.prefixlen + 1 + oldchildprefixlen
+
+			return child
 		}
 
 		return n
