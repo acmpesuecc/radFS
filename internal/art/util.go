@@ -127,8 +127,8 @@ func removechild(n *Node, k byte) *Node {
 	in := n.innerNode
 	_, pos := findchild(k, n)
 
-    // If child doesn't exist, nothing to remove: return the original node unchanged
-	if pos == -1  {
+	// If child doesn't exist, return original node (search loop only for node 4 and 16)
+	if pos == -1 && in.nodeType <= Node16 {
 		return n
 	}
 
@@ -272,7 +272,7 @@ func shrink(n *Node) *Node {
 				new_prefix[n] = edgebyte
 				n++
 			}
-			if len(new_prefix) < maxprefixlen {
+			if n < maxprefixlen {
 				remaining := maxprefixlen - n
 				n += copy(new_prefix[n:], child.innerNode.meta.prefix[:min(oldchildprefixlen, remaining)])
 			}
