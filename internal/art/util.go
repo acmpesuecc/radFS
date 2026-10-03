@@ -129,8 +129,8 @@ func removechild(n *Node, k byte) *Node {
 	in := n.innerNode
 	_, pos := findchild(k, n)
 
-	// If child doesn't exist, return original node (search loop only for node 4 and 16)
-	if pos == -1 && in.nodeType <= Node16 {
+	// If child doesn't exist, nothing to remove: return the original node unchanged
+	if pos == -1 {
 		return n
 	}
 
