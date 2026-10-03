@@ -2,9 +2,11 @@ package art
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 )
 
+// go test -race -count=1 -v .  (run with race detector and no caching)
 func TestInsertAndSearch(t *testing.T) {
 	var tree Tree
 
@@ -181,4 +183,87 @@ func TestNodeShrink(t *testing.T) {
 		t.Fatal("expected Node4")
 	}
 
+}
+
+func TestConcurrentInsertSearch(t *testing.T) {
+	var tree Tree
+	var wg sync.WaitGroup
+
+	const numGoroutines = 50
+	const keysPerGoroutine = 100
+
+	for g := 0; g < numGoroutines; g++ {
+		wg.Add(1)
+		go func(g int) {
+			defer wg.Done()
+			for i := 0; i < keysPerGoroutine; i++ {
+				key := fmt.Appendf(nil, "g%d-k%d", g, i)
+				tree.Insert(key, g*1000+i)
+			}
+		}(g)
+	}
+	wg.Wait()
+
+	for g := 0; g < numGoroutines; g++ {
+		for i := 0; i < keysPerGoroutine; i++ {
+			key := fmt.Appendf(nil, "g%d-k%d", g, i)
+			v, ok := tree.Search(key)
+			if !ok {
+				t.Fatalf("missing key %s", key)
+			}
+			if v != g*1000+i {
+				t.Fatalf("key %s: got %v want %v", key, v, g*1000+i)
+			}
+		}
+	}
+}
+
+func TestConcurrentInsertDeleteSearch(t *testing.T) {
+	var tree Tree
+	var wg sync.WaitGroup
+
+	const numKeys = 500
+	keys := make([][]byte, numKeys)
+	for i := range keys {
+		keys[i] = fmt.Appendf(nil, "key-%d", i)
+		tree.Insert(keys[i], i) // seed sequentially first
+	}
+
+	// concurrent deleters (odd-indexed keys) + updates (even-indexed)
+	for i := 0; i < numKeys; i++ {
+		if i%2 == 1 {
+			wg.Add(1)
+			go func(k []byte) {
+				defer wg.Done()
+				tree.Delete(k)
+			}(keys[i])
+		} else {
+			wg.Add(1)
+			go func(k []byte, v int) {
+				defer wg.Done()
+				tree.Insert(k, v+10000) // concurrent update
+			}(keys[i], i)
+		}
+	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < numKeys; i++ {
+			tree.Search(keys[i]) // concurrent search
+		}
+	}()
+	wg.Wait()
+
+	for i := 0; i < numKeys; i++ {
+		v, ok := tree.Search(keys[i])
+		if i%2 == 1 {
+			if ok {
+				t.Fatalf("key %s should be deleted, got %v", keys[i], v)
+			}
+		} else {
+			if !ok || v != i+10000 {
+				t.Fatalf("key %s: got %v, %v; want %v, true", keys[i], v, ok, i+10000)
+			}
+		}
+	}
 }
