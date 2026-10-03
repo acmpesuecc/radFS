@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"syscall"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -277,6 +278,81 @@ func TestRename(t *testing.T) {
 
 	}
 
+}
+func TestRename_OverwriteFile(t *testing.T) {
+    d := rootDir(t)
+
+    _, _, err := d.Create(ctx(), &fuse.CreateRequest{
+        Name: "old.txt",
+        Mode: 0o666,
+    }, &fuse.CreateResponse{})
+    if err != nil {
+        t.Fatalf("Create old.txt: %v", err)
+    }
+
+    _, _, err = d.Create(ctx(), &fuse.CreateRequest{
+        Name: "new.txt",
+        Mode: 0o666,
+    }, &fuse.CreateResponse{})
+    if err != nil {
+        t.Fatalf("Create new.txt: %v", err)
+    }
+
+    err = d.Rename(ctx(), &fuse.RenameRequest{
+        OldName: "old.txt",
+        NewName: "new.txt",
+    }, d)
+
+    if err != nil {
+        t.Fatalf("Rename: %v", err)
+    }
+
+    if _, err := d.Lookup(ctx(), "old.txt"); err == nil {
+        t.Fatal("old.txt still exists")
+    }
+
+    if _, err := d.Lookup(ctx(), "new.txt"); err != nil {
+        t.Fatalf("new.txt does not exist: %v", err)
+    }
+}
+
+func TestRename_NonEmptyDir(t *testing.T) {
+    d := rootDir(t)
+
+    _, _, err := d.Create(ctx(), &fuse.CreateRequest{
+        Name: "old.txt",
+        Mode: 0o666,
+    }, &fuse.CreateResponse{})
+    if err != nil {
+        t.Fatalf("Create old.txt: %v", err)
+    }
+
+    node, err := d.Mkdir(ctx(), &fuse.MkdirRequest{
+        Name: "dst",
+        Mode: os.ModeDir | 0o755,
+    })
+    if err != nil {
+        t.Fatalf("Mkdir dst: %v", err)
+    }
+
+    dst := node.(*Dir)
+
+    _, _, err = dst.Create(ctx(), &fuse.CreateRequest{
+        Name: "existing.txt",
+        Mode: 0o666,
+    }, &fuse.CreateResponse{})
+    if err != nil {
+        t.Fatalf("Create existing.txt: %v", err)
+    }
+
+    err = d.Rename(ctx(), &fuse.RenameRequest{
+        OldName: "old.txt",
+        NewName: "dst",
+    }, d)
+
+    if err != syscall.ENOTEMPTY {
+        t.Fatalf("Rename error = %v, want ENOTEMPTY", err)
+    }
 }
 
 var _ fs.Node = (*File)(nil)
