@@ -7,10 +7,8 @@ func newNode48() *Node {
 		keys:         make([]byte, Node256Max),
 		children:     make([]*Node, Node48Max),
 		num_children: 0,
-		meta: meta{
-			prefix: make([]byte, maxprefixlen),
-		},
-		freeMask: node48FullMask,
+		meta:         meta{},
+		freeMask:     node48FullMask,
 	}
 	return &Node{innerNode: in}
 }

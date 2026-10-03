@@ -266,14 +266,15 @@ func shrink(n *Node) *Node {
 				return child
 			}
 			oldchildprefixlen := child.innerNode.meta.prefixlen
-			new_prefix := make([]byte, 0, maxprefixlen)
-			new_prefix = append(new_prefix, in.meta.prefix[:min(in.meta.prefixlen, maxprefixlen)]...)
-			if len(new_prefix) < maxprefixlen {
-				new_prefix = append(new_prefix, edgebyte)
+			var new_prefix [maxprefixlen]byte
+			n := copy(new_prefix[:], in.meta.prefix[:min(in.meta.prefixlen, maxprefixlen)])
+			if n < maxprefixlen {
+				new_prefix[n] = edgebyte
+				n++
 			}
 			if len(new_prefix) < maxprefixlen {
-				remaining := maxprefixlen - len(new_prefix)
-				new_prefix = append(new_prefix, child.innerNode.meta.prefix[:min(remaining, oldchildprefixlen)]...)
+				remaining := maxprefixlen - n
+				n += copy(new_prefix[n:], child.innerNode.meta.prefix[:min(oldchildprefixlen, remaining)])
 			}
 
 			child.innerNode.meta.prefix = new_prefix
@@ -330,7 +331,7 @@ func shrink(n *Node) *Node {
 
 func copymeta(n *Node, new_node *Node) {
 	new_node.innerNode.meta.prefixlen = n.innerNode.meta.prefixlen
-	copy(new_node.innerNode.meta.prefix, n.innerNode.meta.prefix) // both are maxprefixlen long
+	copy(new_node.innerNode.meta.prefix[:], n.innerNode.meta.prefix[:]) // both are maxprefixlen long
 	new_node.innerNode.leaf = n.innerNode.leaf
 }
 
@@ -366,4 +367,3 @@ func fetchleaf(n *Node) *Node {
 	return nil
 
 }
-

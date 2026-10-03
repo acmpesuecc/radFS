@@ -8,9 +8,7 @@ func newNode256() *Node {
 		children:     make([]*Node, Node256Max),
 		num_children: 0,
 
-		meta: meta{
-			prefix: make([]byte, maxprefixlen),
-		},
+		meta: meta{},
 	}
 	return &Node{innerNode: in}
 }

@@ -104,20 +104,20 @@ func insert(n *Node, value interface{}, key []byte, depth int) *Node {
 
 			new_node.innerNode.meta.prefixlen = p
 			if p < maxprefixlen {
-				copy(new_node.innerNode.meta.prefix, cur.innerNode.meta.prefix[:p])
+				copy(new_node.innerNode.meta.prefix[:], cur.innerNode.meta.prefix[:p])
 
 			} else {
-				copy(new_node.innerNode.meta.prefix, cur.innerNode.meta.prefix[:maxprefixlen])
+				copy(new_node.innerNode.meta.prefix[:], cur.innerNode.meta.prefix[:maxprefixlen])
 			}
 
 			oldprefixlen := cur.innerNode.meta.prefixlen
 			cur.innerNode.meta.prefixlen = oldprefixlen - (p + 1)
 			if oldprefixlen < maxprefixlen {
-				copy(cur.innerNode.meta.prefix, cur.innerNode.meta.prefix[p+1:oldprefixlen])
+				copy(cur.innerNode.meta.prefix[:], cur.innerNode.meta.prefix[p+1:oldprefixlen])
 
 			} else {
 				leaf := fetchleaf(cur)
-				copy(cur.innerNode.meta.prefix, leaf.leaf.key[depth+p+1:depth+p+1+maxprefixlen])
+				copy(cur.innerNode.meta.prefix[:], leaf.leaf.key[depth+p+1:depth+p+1+maxprefixlen])
 			}
 			if parent != nil {
 				parent = addchild(parent, parentbyte, new_node)

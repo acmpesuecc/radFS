@@ -7,9 +7,7 @@ func newNode16() *Node {
 		keys:         make([]byte, Node16Max),
 		children:     make([]*Node, Node16Max),
 		num_children: 0,
-		meta: meta{
-			prefix: make([]byte, maxprefixlen),
-		},
+		meta:         meta{},
 	}
 	return &Node{innerNode: in}
 }

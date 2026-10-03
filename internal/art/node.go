@@ -35,11 +35,11 @@ type innerNode struct {
 
 	num_children int
 
-	meta meta
+	meta     meta
 	freeMask uint64 // bitmask to track free slots in Node48
 }
 
 type meta struct {
-	prefix    []byte
+	prefix    [maxprefixlen]byte
 	prefixlen int
 }
