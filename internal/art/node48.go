@@ -10,6 +10,7 @@ func newNode48() *Node {
 		meta: meta{
 			prefix: make([]byte, maxprefixlen),
 		},
+		freeMask: node48FullMask,
 	}
 	return &Node{innerNode: in}
 }

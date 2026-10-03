@@ -1,5 +1,9 @@
 package art
 
+import "math/bits"
+
+const node48FullMask = (uint64(1) << 48) - 1
+
 // TODO: Helper functions (e.g., prefix matching)
 func addchild(n *Node, k byte, child *Node) *Node {
 	in := n.innerNode
@@ -43,18 +47,12 @@ func addchild(n *Node, k byte, child *Node) *Node {
 			return n
 
 		}
+		i := bits.TrailingZeros64(in.freeMask) // first free slot, O(1)
+		in.children[i] = child
+		in.keys[k] = byte(i + 1)
+		in.freeMask &^= 1 << uint(i) // mark slot occupied
+		in.num_children++
 
-		for i := 0; i < len(in.children); i++ { // find the free child
-			if in.children[i] == nil {
-				in.children[i] = child
-				in.keys[k] = byte(i + 1)
-				in.num_children++
-
-				break
-
-			}
-
-		}
 	case Node256:
 		if in.children[k] != nil { //update key
 			in.children[k] = child
@@ -151,6 +149,7 @@ func removechild(n *Node, k byte) *Node {
 		if idx > 0 {
 			in.keys[k] = 0
 			in.children[idx-1] = nil
+			in.freeMask |= 1 << uint(idx-1) // mark slot free
 			in.num_children--
 		}
 
@@ -220,6 +219,7 @@ func grow(n *Node) *Node {
 
 		}
 		n48.innerNode.num_children = index
+		n48.innerNode.freeMask = node48FullMask &^ ((uint64(1) << uint(index)) - 1) //slots from 0 to index-1 are occupied (mark them as occupied in freeMask)
 		return n48
 
 	case Node48:
@@ -322,17 +322,16 @@ func shrink(n *Node) *Node {
 			}
 		}
 		n48.innerNode.num_children = count
+		n48.innerNode.freeMask = node48FullMask &^ ((uint64(1) << uint(count)) - 1) //slots from 0 to count-1 are occupied (mark them as occupied in freeMask)
 		return n48
 	}
 	return n
 }
 
 func copymeta(n *Node, new_node *Node) {
-
 	new_node.innerNode.meta.prefixlen = n.innerNode.meta.prefixlen
-	new_node.innerNode.meta.prefix = deepcopy(n.innerNode.meta.prefix[:min(n.innerNode.meta.prefixlen, maxprefixlen)])
+	copy(new_node.innerNode.meta.prefix, n.innerNode.meta.prefix) // both are maxprefixlen long
 	new_node.innerNode.leaf = n.innerNode.leaf
-
 }
 
 func fetchleaf(n *Node) *Node {
@@ -368,10 +367,3 @@ func fetchleaf(n *Node) *Node {
 
 }
 
-func deepcopy(source []byte) []byte {
-
-	desarr := make([]byte, maxprefixlen)
-	copy(desarr, source)
-	return desarr
-
-}

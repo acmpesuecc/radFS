@@ -20,6 +20,9 @@ func (f *FS) DebugPrint(msg string, v ...any) {
 }
 
 func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
 	a.Inode = d.inode
 	a.Mode = os.ModeDir | 0o755
 	a.Atime = d.atime
@@ -56,15 +59,17 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	d.fs.DebugPrint("LOOKUP", "fetching", name)
 
 	d.mu.RLock()
-
 	v, ok := d.tree.Search([]byte(name))
 	d.mu.RUnlock()
+
 	if !ok {
 		return nil, syscall.ENOENT
 	}
+
 	d.mu.Lock()
 	d.atime = time.Now()
 	d.mu.Unlock()
+
 	return v.(fs.Node), nil
 
 }
@@ -73,7 +78,6 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	d.fs.DebugPrint("READDIR", "inode", d.inode)
 
 	d.mu.RLock()
-	defer d.mu.RUnlock()
 
 	var entries []fuse.Dirent
 	d.tree.ForEach(func(b []byte, i interface{}) { //traverses tree and appends the dirent to entries
@@ -84,13 +88,17 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 			dtype = fuse.DT_File
 		case *Dir:
 			dtype = fuse.DT_Dir
+		default:
+			dtype = fuse.DT_File
 
 		}
-
 		entries = append(entries, fuse.Dirent{Name: name, Type: dtype})
 	})
+	d.mu.RUnlock()
 
+	d.mu.Lock()
 	d.atime = time.Now()
+	d.mu.Unlock()
 
 	return entries, nil
 }
