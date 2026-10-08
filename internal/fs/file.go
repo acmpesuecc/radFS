@@ -139,6 +139,8 @@ func (f *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse
 	resp.Attr.Atime = f.atime
 	resp.Attr.Mtime = f.mtime
 	resp.Attr.Ctime = f.ctime
+	resp.Attr.Uid = f.uid
+	resp.Attr.Gid = f.gid
 
 	return nil
 }

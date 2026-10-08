@@ -232,7 +232,7 @@ func TestRemove_ThenLookupFails(t *testing.T) {
 }
 
 func TestFileAttr(t *testing.T) {
-	f := &File{inode: 42, data: []byte("test"), mode: 0o644}
+	f := &File{inode: 42, data: []byte("test"), mode: 0o644, uid: 1001, gid: 1002}
 	var a fuse.Attr
 
 	if err := f.Attr(ctx(), &a); err != nil {
@@ -245,6 +245,10 @@ func TestFileAttr(t *testing.T) {
 
 	if a.Size != 4 {
 		t.Errorf("size = %d, want 4", a.Size)
+	}
+
+	if a.Uid != 1001 || a.Gid != 1002 {
+		t.Errorf("ownership = %d:%d, want 1001:1002", a.Uid, a.Gid)
 	}
 }
 
@@ -262,6 +266,75 @@ func TestDirAttr(t *testing.T) {
 
 	if a.Mode&os.ModeDir == 0 {
 		t.Error("Dir.Attr mode missing ModeDir bit")
+	}
+
+	if a.Uid != uint32(os.Getuid()) || a.Gid != uint32(os.Getgid()) {
+		t.Errorf("root ownership = %d:%d, want %d:%d", a.Uid, a.Gid, os.Getuid(), os.Getgid())
+	}
+}
+
+func TestCreatedEntriesHaveOwner(t *testing.T) {
+	d := rootDir(t)
+	wantUID := uint32(os.Getuid())
+	wantGID := uint32(os.Getgid())
+
+	fileNode, _, err := d.Create(ctx(), &fuse.CreateRequest{Name: "owned.txt", Mode: 0o666}, &fuse.CreateResponse{})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	var fileAttr fuse.Attr
+	if err := fileNode.(*File).Attr(ctx(), &fileAttr); err != nil {
+		t.Fatalf("File.Attr: %v", err)
+	}
+
+	if fileAttr.Uid != wantUID || fileAttr.Gid != wantGID {
+		t.Errorf("created file ownership = %d:%d, want %d:%d", fileAttr.Uid, fileAttr.Gid, wantUID, wantGID)
+	}
+
+	dirNode, err := d.Mkdir(ctx(), &fuse.MkdirRequest{Name: "owned-dir", Mode: os.ModeDir | 0o755})
+	if err != nil {
+		t.Fatalf("Mkdir: %v", err)
+	}
+
+	var dirAttr fuse.Attr
+	if err := dirNode.(*Dir).Attr(ctx(), &dirAttr); err != nil {
+		t.Fatalf("Dir.Attr: %v", err)
+	}
+
+	if dirAttr.Uid != wantUID || dirAttr.Gid != wantGID {
+		t.Errorf("created directory ownership = %d:%d, want %d:%d", dirAttr.Uid, dirAttr.Gid, wantUID, wantGID)
+	}
+}
+
+func TestSetattrResponsesIncludeOwnership(t *testing.T) {
+	d := rootDir(t)
+	fileNode, _, err := d.Create(ctx(), &fuse.CreateRequest{Name: "setattr-owned.txt", Mode: 0o666}, &fuse.CreateResponse{})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	var fileResp fuse.SetattrResponse
+	if err := fileNode.(*File).Setattr(ctx(), &fuse.SetattrRequest{}, &fileResp); err != nil {
+		t.Fatalf("File.Setattr: %v", err)
+	}
+
+	if fileResp.Attr.Uid != uint32(os.Getuid()) || fileResp.Attr.Gid != uint32(os.Getgid()) {
+		t.Errorf("file Setattr ownership = %d:%d, want %d:%d", fileResp.Attr.Uid, fileResp.Attr.Gid, os.Getuid(), os.Getgid())
+	}
+
+	dirNode, err := d.Mkdir(ctx(), &fuse.MkdirRequest{Name: "setattr-owned-dir", Mode: os.ModeDir | 0o755})
+	if err != nil {
+		t.Fatalf("Mkdir: %v", err)
+	}
+
+	var dirResp fuse.SetattrResponse
+	if err := dirNode.(*Dir).Setattr(ctx(), &fuse.SetattrRequest{}, &dirResp); err != nil {
+		t.Fatalf("Dir.Setattr: %v", err)
+	}
+
+	if dirResp.Attr.Uid != uint32(os.Getuid()) || dirResp.Attr.Gid != uint32(os.Getgid()) {
+		t.Errorf("directory Setattr ownership = %d:%d, want %d:%d", dirResp.Attr.Uid, dirResp.Attr.Gid, os.Getuid(), os.Getgid())
 	}
 }
 

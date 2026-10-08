@@ -28,6 +28,8 @@ func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Atime = d.atime
 	a.Mtime = d.mtime
 	a.Ctime = d.ctime
+	a.Uid = d.uid
+	a.Gid = d.gid
 
 	return nil
 }
@@ -48,10 +50,11 @@ func (d *Dir) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse.
 
 	resp.Attr.Inode = d.inode
 	resp.Attr.Mode = os.ModeDir | 0o755
-
 	resp.Attr.Atime = d.atime
 	resp.Attr.Mtime = d.mtime
 	resp.Attr.Ctime = d.ctime
+	resp.Attr.Uid = d.uid
+	resp.Attr.Gid = d.gid
 
 	return nil
 }
@@ -127,6 +130,8 @@ func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error
 		atime: now,
 		mtime: now,
 		ctime: now,
+		uid:   uint32(os.Getuid()),
+		gid:   uint32(os.Getgid()),
 	}
 
 	d.tree.Insert([]byte(req.Name), newDir)
@@ -162,6 +167,8 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 		atime: now,
 		ctime: now,
 		mtime: now,
+		uid:   uint32(os.Getuid()),
+		gid:   uint32(os.Getgid()),
 	}
 
 	d.tree.Insert([]byte(req.Name), f)

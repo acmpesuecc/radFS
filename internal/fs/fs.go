@@ -26,6 +26,8 @@ func nextInode() uint64 {
 
 func (f *FS) Root() (fs.Node, error) {
 	now := time.Now()
+	uid := uint32(os.Getuid())
+	gid := uint32(os.Getgid())
 
 	root := &Dir{
 		inode: 1,
@@ -34,6 +36,8 @@ func (f *FS) Root() (fs.Node, error) {
 		atime: now,
 		mtime: now,
 		ctime: now,
+		uid:   uid,
+		gid:   gid,
 	}
 
 	hello := &File{
@@ -43,8 +47,8 @@ func (f *FS) Root() (fs.Node, error) {
 		atime: now,
 		mtime: now,
 		ctime: now,
-		uid:   uint32(os.Getuid()), //permissions implemnet based on userid
-		gid:   uint32(os.Getgid()), //permissions implement based on groupid
+		uid:   uid, //permissions implemnet based on userid
+		gid:   gid, //permissions implement based on groupid
 	}
 
 	root.tree.Insert([]byte("hello.txt"), hello)
@@ -72,4 +76,6 @@ type Dir struct {
 	atime time.Time
 	mtime time.Time
 	ctime time.Time
+	uid   uint32
+	gid   uint32
 }
