@@ -3,6 +3,7 @@ package fs
 import (
 	"context"
 	"os"
+	"syscall"
 	"testing"
 	"time"
 
@@ -103,7 +104,9 @@ func TestCreate_DuplicateFile(t *testing.T) {
 		t.Fatalf("first Create: %v", err)
 	}
 
-	_, _, _ = d.Create(ctx(), req, resp)
+	if _, _, err := d.Create(ctx(), req, resp); err != syscall.EEXIST {
+		t.Fatalf("duplicate Create error = %v, want %v", err, syscall.EEXIST)
+	}
 }
 
 func TestMkdir_NewDir(t *testing.T) {
