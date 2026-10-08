@@ -28,12 +28,11 @@ func (f *FS) Root() (fs.Node, error) {
 	root := &Dir{
 		inode: 1,
 		tree:  art.New(),
-
-		fs: f,
-
+		fs:    f,
 		atime: time.Now(),
 		mtime: time.Now(),
-		ctime: time.Now()}
+		ctime: time.Now(),
+	}
 
 	hello := &File{
 		inode: nextInode(),

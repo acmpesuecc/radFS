@@ -1,8 +1,6 @@
 package art
 
-import (
-	"sync"
-)
+import "sync"
 
 // TODO: Public API (Tree struct, Insert, Search, Delete)
 
@@ -60,15 +58,15 @@ func GetNodeTypeName(n *Node) string {
 	types := []string{"Node4", "Node16", "Node48", "Node256"}
 	return types[n.innerNode.nodeType]
 }
+
 func (t *Tree) ForEach(fn func([]byte, interface{})) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	traverse(t.root, 0, fn)
 }
-func New() *Tree {
 
-	return &Tree{}
-}
+func New() *Tree { return &Tree{} }
+
 func (t *Tree) Empty() bool {
 	t.mu.RLock()
 	defer t.mu.RUnlock()

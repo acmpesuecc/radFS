@@ -13,6 +13,7 @@ func TestInsertAndSearch(t *testing.T) {
 	tree.Insert([]byte("hello"), "world")
 
 	v, ok := tree.Search([]byte("hello"))
+
 	if !ok {
 		t.Fatal("key not found")
 	}
@@ -21,6 +22,7 @@ func TestInsertAndSearch(t *testing.T) {
 	}
 
 }
+
 func TestSearchMissing(t *testing.T) {
 	var tree Tree
 
@@ -91,6 +93,7 @@ func TestDeletePrefix(t *testing.T) {
 		t.Fatal("abc missing")
 	}
 }
+
 func TestUpdate(t *testing.T) {
 	var tree Tree
 
@@ -105,6 +108,7 @@ func TestUpdate(t *testing.T) {
 		t.Fatalf("got %v want new", v)
 	}
 }
+
 func TestForEach(t *testing.T) {
 	var tree Tree
 
@@ -245,6 +249,7 @@ func TestConcurrentInsertDeleteSearch(t *testing.T) {
 			}(keys[i], i)
 		}
 	}
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -264,6 +269,24 @@ func TestConcurrentInsertDeleteSearch(t *testing.T) {
 			if !ok || v != i+10000 {
 				t.Fatalf("key %s: got %v, %v; want %v, true", keys[i], v, ok, i+10000)
 			}
+		}
+	}
+}
+
+func TestPrefixSplitAfterStoredPrefix(t *testing.T) {
+	var tree Tree
+
+	tree.Insert([]byte("aaaaaaaaX"), 1)
+	tree.Insert([]byte("aaaaaaaaY"), 2)
+	tree.Insert([]byte("aaaaaaaZ"), 3)
+
+	for _, key := range []string{
+		"aaaaaaaaX",
+		"aaaaaaaaY",
+		"aaaaaaaZ",
+	} {
+		if _, ok := tree.Search([]byte(key)); !ok {
+			t.Fatalf("missing key %q", key)
 		}
 	}
 }

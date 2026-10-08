@@ -10,5 +10,6 @@ func newNode48() *Node {
 		meta:         meta{},
 		freeMask:     node48FullMask,
 	}
+
 	return &Node{innerNode: in}
 }

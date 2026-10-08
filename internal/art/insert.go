@@ -1,13 +1,10 @@
 package art
 
-import (
-	"bytes"
-)
+import "bytes"
 
 func insert(n *Node, value interface{}, key []byte, depth int) *Node {
 
 	if n == nil {
-
 		return newleaf(value, key)
 	}
 	var parent *Node
@@ -17,7 +14,6 @@ func insert(n *Node, value interface{}, key []byte, depth int) *Node {
 	cur.mu.Lock()
 
 	for {
-
 		if isleaf(cur) {
 			if bytes.Equal(cur.leaf.key, key) { // exact key match: update in place
 				cur.leaf.values = value
@@ -25,6 +21,7 @@ func insert(n *Node, value interface{}, key []byte, depth int) *Node {
 					parent.mu.Unlock()
 				}
 				cur.mu.Unlock()
+
 				return n
 			}
 
@@ -37,6 +34,7 @@ func insert(n *Node, value interface{}, key []byte, depth int) *Node {
 					parent.mu.Unlock()
 				}
 				cur.mu.Unlock()
+
 				return n
 			}
 
@@ -44,7 +42,6 @@ func insert(n *Node, value interface{}, key []byte, depth int) *Node {
 				prefix_index := i - depth
 				if prefix_index < maxprefixlen {
 					new_node.innerNode.meta.prefix[prefix_index] = key[i] // stores only the till max prefix
-
 				}
 
 				i++
@@ -54,19 +51,16 @@ func insert(n *Node, value interface{}, key []byte, depth int) *Node {
 			depth = i
 			if depth == len(key) {
 				new_node.innerNode.leaf = newleaf(value, key)
-
 			} else {
-
 				new_node = addchild(new_node, key[depth], newleaf(value, key))
-
 			}
+
 			if depth == len(oldkey) {
 				new_node.innerNode.leaf = cur
-
 			} else {
 				new_node = addchild(new_node, oldkey[depth], cur)
-
 			}
+
 			if parent != nil {
 				parent = addchild(parent, parentbyte, new_node)
 				parent.mu.Unlock()
@@ -75,20 +69,18 @@ func insert(n *Node, value interface{}, key []byte, depth int) *Node {
 				return n
 			}
 			cur.mu.Unlock()
-			return new_node
 
+			return new_node
 		}
+
 		p := checkprefix(cur, key, depth) //inner node prefix check
 
 		if p != cur.innerNode.meta.prefixlen {
-
 			new_node := newNode4()
 			if p+depth == len(key) {
 				new_node.innerNode.leaf = newleaf(value, key)
-
 			} else {
 				new_node = addchild(new_node, key[depth+p], newleaf(value, key))
-
 			}
 			leaf := fetchleaf(cur) // either its an actual leaf or innernode leaf
 			oldkey := leaf.leaf.key
@@ -105,20 +97,22 @@ func insert(n *Node, value interface{}, key []byte, depth int) *Node {
 			new_node.innerNode.meta.prefixlen = p
 			if p < maxprefixlen {
 				copy(new_node.innerNode.meta.prefix[:], cur.innerNode.meta.prefix[:p])
-
 			} else {
 				copy(new_node.innerNode.meta.prefix[:], cur.innerNode.meta.prefix[:maxprefixlen])
 			}
 
 			oldprefixlen := cur.innerNode.meta.prefixlen
-			cur.innerNode.meta.prefixlen = oldprefixlen - (p + 1)
-			if oldprefixlen < maxprefixlen {
-				copy(cur.innerNode.meta.prefix[:], cur.innerNode.meta.prefix[p+1:oldprefixlen])
+			newprefixlen := oldprefixlen - (p + 1)
+			var shiftedPrefix [maxprefixlen]byte
+			copyLen := min(maxprefixlen, newprefixlen)
+			copy(
+				shiftedPrefix[:copyLen],
+				oldkey[depth+p+1:depth+p+1+copyLen],
+			)
 
-			} else {
-				leaf := fetchleaf(cur)
-				copy(cur.innerNode.meta.prefix[:], leaf.leaf.key[depth+p+1:depth+p+1+maxprefixlen])
-			}
+			cur.innerNode.meta.prefix = shiftedPrefix
+			cur.innerNode.meta.prefixlen = newprefixlen
+
 			if parent != nil {
 				parent = addchild(parent, parentbyte, new_node)
 				parent.mu.Unlock()
@@ -161,7 +155,5 @@ func insert(n *Node, value interface{}, key []byte, depth int) *Node {
 		parentbyte = key[depth] //stores the parent byte to be used in addchild when we need to replace the child
 
 		depth++
-
 	}
-
 }

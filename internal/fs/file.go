@@ -4,8 +4,8 @@ import (
 	"context"
 	"math"
 	"os"
-	"time"
 	"syscall"
+	"time"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -40,17 +40,17 @@ func (f *File) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 
 	if req.Offset >= int64(len(f.data)) {
 		resp.Data = []byte{}
-
 		return nil
 	}
 
 	end := req.Offset + int64(req.Size)
 
-	if end < req.Offset { 
+	if end < req.Offset {
 		end = int64(len(f.data)) //if "end" is huge
 	}
+
 	end = min(end, int64(len(f.data)))
-	resp.Data = append([]byte(nil), f.data[req.Offset:end]...) 
+	resp.Data = append([]byte(nil), f.data[req.Offset:end]...)
 	//hack(sort of), we do append here to duplicate it to seperate memroy so we dont face any concurrency stuff
 	//earlier it was giving the same pointer to f.data to resp and if something uses that f.data while this is going on then lil issues
 
@@ -70,7 +70,7 @@ func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.Wri
 
 	data_len := int64(len(req.Data))
 
-	if req.Offset > int64(math.MaxInt) - data_len { //data_len because "end" can overflow if the offset itself is maxint64  
+	if req.Offset > int64(math.MaxInt)-data_len { //data_len because "end" can overflow if the offset itself is maxint64
 		return syscall.EFBIG
 	}
 
@@ -128,6 +128,7 @@ func (f *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse
 	if req.Valid.Atime() {
 		f.atime = req.Atime
 	}
+
 	if req.Valid.Mtime() {
 		f.mtime = req.Mtime
 	}

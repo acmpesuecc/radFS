@@ -12,12 +12,12 @@ const (
 	Node48
 	Node256
 )
-const (
-	Node4max   = 4
-	Node16Max  = 16
-	Node48Max  = 48
-	Node256Max = 256
 
+const (
+	Node4max     = 4
+	Node16Max    = 16
+	Node48Max    = 48
+	Node256Max   = 256
 	maxprefixlen = 8
 )
 
@@ -28,15 +28,13 @@ type Node struct {
 }
 
 type innerNode struct {
-	nodeType NodeType
-	keys     []byte
-	children []*Node
-	leaf     *Node
-
+	nodeType     NodeType
+	keys         []byte
+	children     []*Node
+	leaf         *Node
 	num_children int
-
-	meta     meta
-	freeMask uint64 // bitmask to track free slots in Node48
+	meta         meta
+	freeMask     uint64 // bitmask to track free slots in Node48
 }
 
 type meta struct {

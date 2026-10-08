@@ -9,20 +9,24 @@ import (
 	"bazil.org/fuse/fs"
 )
 
-func newTestFS() *FS       { return New(false) }
+func newTestFS() *FS { return New(false) }
+
 func ctx() context.Context { return context.Background() }
 
 func rootDir(t *testing.T) *Dir {
 	t.Helper()
 	f := newTestFS()
 	node, err := f.Root()
+
 	if err != nil {
 		t.Fatalf("Root() error: %v", err)
 	}
+
 	d, ok := node.(*Dir)
 	if !ok {
 		t.Fatalf("Root() did not return *Dir")
 	}
+
 	return d
 }
 
@@ -43,9 +47,11 @@ func TestRoot_HasHelloTxt(t *testing.T) {
 func TestLookup_ExistingFile(t *testing.T) {
 	d := rootDir(t)
 	node, err := d.Lookup(ctx(), "hello.txt")
+
 	if err != nil {
 		t.Fatalf("Lookup existing file: %v", err)
 	}
+
 	if node == nil {
 		t.Fatal("Lookup returned nil node")
 	}
@@ -54,6 +60,7 @@ func TestLookup_ExistingFile(t *testing.T) {
 func TestLookup_MissingFile(t *testing.T) {
 	d := rootDir(t)
 	_, err := d.Lookup(ctx(), "no-such-file.txt")
+
 	if err == nil {
 		t.Fatal("expected error for missing file, got nil")
 	}
@@ -72,9 +79,11 @@ func TestCreate_NewFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
+
 	if node == nil {
 		t.Fatal("Create returned nil node")
 	}
+
 	if handle == nil {
 		t.Fatal("Create returned nil handle")
 	}
@@ -104,9 +113,11 @@ func TestMkdir_NewDir(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Mkdir: %v", err)
 	}
+
 	if node == nil {
 		t.Fatal("Mkdir returned nil node")
 	}
+
 	if _, ok := d.tree.Search([]byte("subdir")); !ok {
 		t.Error("subdir not found in dir after Mkdir")
 	}
@@ -123,6 +134,7 @@ func TestMkdir_NestedLookup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Lookup after Mkdir: %v", err)
 	}
+
 	if _, ok := node.(*Dir); !ok {
 		t.Error("Lookup of mkdir result is not *Dir")
 	}
@@ -136,6 +148,7 @@ func TestWrite_BasicContent(t *testing.T) {
 	if err := f.Write(ctx(), req, resp); err != nil {
 		t.Fatalf("Write: %v", err)
 	}
+
 	if resp.Size != len(req.Data) {
 		t.Errorf("Write size = %d, want %d", resp.Size, len(req.Data))
 	}
@@ -151,6 +164,7 @@ func TestRead_AfterWrite(t *testing.T) {
 	if err := f.Read(ctx(), req, resp); err != nil {
 		t.Fatalf("Read: %v", err)
 	}
+
 	if string(resp.Data) != string(content) {
 		t.Errorf("Read = %q, want %q", resp.Data, content)
 	}
@@ -164,6 +178,7 @@ func TestRead_PartialOffset(t *testing.T) {
 	if err := f.Read(ctx(), req, resp); err != nil {
 		t.Fatalf("Read: %v", err)
 	}
+
 	if string(resp.Data) != "4567" {
 		t.Errorf("Read partial = %q, want %q", resp.Data, "4567")
 	}
@@ -177,6 +192,7 @@ func TestRead_BeyondEOF(t *testing.T) {
 	if err := f.Read(ctx(), req, resp); err != nil {
 		t.Fatalf("Read beyond EOF should not error: %v", err)
 	}
+
 	if len(resp.Data) != 0 {
 		t.Errorf("expected 0 bytes beyond EOF, got %d", len(resp.Data))
 	}
@@ -189,6 +205,7 @@ func TestRemove_ExistingFile(t *testing.T) {
 	if err := d.Remove(ctx(), req); err != nil {
 		t.Fatalf("Remove: %v", err)
 	}
+
 	if _, ok := d.tree.Search([]byte("hello.txt")); ok {
 		t.Error("hello.txt still present after Remove")
 	}
@@ -217,12 +234,15 @@ func TestRemove_ThenLookupFails(t *testing.T) {
 func TestFileAttr(t *testing.T) {
 	f := &File{inode: 42, data: []byte("test"), mode: 0o644}
 	var a fuse.Attr
+
 	if err := f.Attr(ctx(), &a); err != nil {
 		t.Fatalf("File.Attr: %v", err)
 	}
+
 	if a.Inode != 42 {
 		t.Errorf("inode = %d, want 42", a.Inode)
 	}
+
 	if a.Size != 4 {
 		t.Errorf("size = %d, want 4", a.Size)
 	}
@@ -231,12 +251,15 @@ func TestFileAttr(t *testing.T) {
 func TestDirAttr(t *testing.T) {
 	d := rootDir(t)
 	var a fuse.Attr
+
 	if err := d.Attr(ctx(), &a); err != nil {
 		t.Fatalf("Dir.Attr: %v", err)
 	}
+
 	if a.Inode != 1 {
 		t.Errorf("root inode = %d, want 1", a.Inode)
 	}
+
 	if a.Mode&os.ModeDir == 0 {
 		t.Error("Dir.Attr mode missing ModeDir bit")
 	}
@@ -245,38 +268,43 @@ func TestDirAttr(t *testing.T) {
 func TestReadDirAll_ContainsHello(t *testing.T) {
 	d := rootDir(t)
 	entries, err := d.ReadDirAll(ctx())
+
 	if err != nil {
 		t.Fatalf("ReadDirAll: %v", err)
 	}
+
 	found := false
 	for _, e := range entries {
 		if e.Name == "hello.txt" {
 			found = true
 		}
 	}
+
 	if !found {
 		t.Error("ReadDirAll missing hello.txt entry")
 	}
 }
+
 func TestRename(t *testing.T) {
 	d := rootDir(t)
 	_, _, err := d.Create(ctx(), &fuse.CreateRequest{Name: "old.txt", Mode: 0o666}, &fuse.CreateResponse{})
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
+
 	err = d.Rename(ctx(), &fuse.RenameRequest{OldName: "old.txt", NewName: "new.txt"}, d)
 	if err != nil {
 		t.Fatalf("Rename: %v", err)
 	}
+
 	if _, err := d.Lookup(ctx(), "old.txt"); err == nil {
 		t.Fatal("old text exists")
 
 	}
+
 	if _, err := d.Lookup(ctx(), "new.txt"); err != nil {
 		t.Fatal("new text doesnt exists")
-
 	}
-
 }
 
 var _ fs.Node = (*File)(nil)

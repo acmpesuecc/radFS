@@ -9,5 +9,6 @@ func newNode16() *Node {
 		num_children: 0,
 		meta:         meta{},
 	}
+
 	return &Node{innerNode: in}
 }

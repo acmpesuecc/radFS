@@ -118,5 +118,4 @@ func deletekey(n *Node, key []byte, depth int) (*Node, bool) {
 		depth++
 
 	}
-
 }

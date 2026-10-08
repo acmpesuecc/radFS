@@ -8,6 +8,6 @@ func newNode4() *Node {
 		num_children: 0,
 		meta:         meta{},
 	}
-	return &Node{innerNode: in}
 
+	return &Node{innerNode: in}
 }

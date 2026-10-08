@@ -39,9 +39,11 @@ func (d *Dir) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse.
 	if req.Valid.Atime() {
 		d.atime = req.Atime
 	}
+
 	if req.Valid.Mtime() {
 		d.mtime = req.Mtime
 	}
+
 	d.ctime = time.Now()
 
 	resp.Attr.Inode = d.inode
@@ -52,7 +54,6 @@ func (d *Dir) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse.
 	resp.Attr.Ctime = d.ctime
 
 	return nil
-
 }
 
 func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
@@ -71,7 +72,6 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	d.mu.Unlock()
 
 	return v.(fs.Node), nil
-
 }
 
 func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
@@ -90,7 +90,6 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 			dtype = fuse.DT_Dir
 		default:
 			dtype = fuse.DT_File
-
 		}
 		entries = append(entries, fuse.Dirent{Name: name, Type: dtype})
 	})
@@ -149,7 +148,6 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 
 	if _, exist := d.tree.Search([]byte(req.Name)); exist {
 		return nil, nil, syscall.EEXIST
-
 	}
 
 	f := &File{inode: nextInode(), data: []byte{}, mode: uint32(req.Mode), atime: time.Now(),
@@ -222,7 +220,6 @@ func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Nod
 		second := newParent
 		if first.inode > second.inode {
 			first, second = second, first
-
 		}
 		first.mu.Lock()
 		second.mu.Lock()
@@ -250,11 +247,10 @@ func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Nod
 	}
 
 	//removes from old
-
 	d.tree.Delete([]byte(req.OldName))
 
 	//adds to new
-
 	newParent.tree.Insert([]byte(req.NewName), node)
+
 	return nil
 }

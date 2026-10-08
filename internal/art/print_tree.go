@@ -23,7 +23,6 @@ func PrintTree(n *Node, level int, depth int) {
 	prefix := ""
 	if prefixlen <= maxprefixlen {
 		prefix = string(in.meta.prefix[:prefixlen])
-
 	} else {
 		leaf := fetchleaf(n)
 		prefix = string(leaf.leaf.key[depth : depth+prefixlen])
@@ -53,7 +52,6 @@ func PrintTree(n *Node, level int, depth int) {
 			idx := in.keys[b]
 
 			if idx != 0 {
-
 				child := in.children[idx-1]
 
 				fmt.Printf("%s Edge('%c' | %d):\t", indent, byte(b), b)

@@ -1,8 +1,6 @@
 package art
 
-import (
-	"bytes"
-)
+import "bytes"
 
 func search(n *Node, key []byte, depth int) *Node {
 	cur := n
@@ -41,6 +39,7 @@ func search(n *Node, key []byte, depth int) *Node {
 				return cur.innerNode.leaf
 			}
 			cur.mu.RUnlock()
+
 			return nil
 		}
 
@@ -56,8 +55,7 @@ func search(n *Node, key []byte, depth int) *Node {
 
 		cur = next
 		depth++
-
 	}
-	return nil
 
+	return nil
 }

@@ -11,8 +11,8 @@ func newleaf(value interface{}, key []byte) *Node {
 	return &Node{
 		leaf: &leaf{key: key, values: value},
 	}
-
 }
+
 func isleaf(n *Node) bool {
 	return n.leaf != nil
 }
