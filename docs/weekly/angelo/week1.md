@@ -1,3 +1,5 @@
+
+
 ## Angelo's Progress 
 * Learned types of file systems 
 * Understood how the hierarchy of file systems via inodes, dentry and such
@@ -9,3 +11,6 @@
 * Learn golang in depth
 * Get an idea of how to implement a FUSE filesystem in golang
 * Delve into tempfs
+
+
+
