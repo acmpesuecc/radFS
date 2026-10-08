@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -393,6 +394,60 @@ func TestRename(t *testing.T) {
 
 	if _, err := d.Lookup(ctx(), "new.txt"); err != nil {
 		t.Fatal("new text doesnt exists")
+	}
+}
+
+func TestRenameUpdatesParentTimestamps(t *testing.T) {
+	root := rootDir(t)
+
+	sourceNode, err := root.Mkdir(ctx(), &fuse.MkdirRequest{Name: "source", Mode: 0o755})
+	if err != nil {
+		t.Fatalf("Mkdir source: %v", err)
+	}
+
+	destinationNode, err := root.Mkdir(ctx(), &fuse.MkdirRequest{Name: "destination", Mode: 0o755})
+	if err != nil {
+		t.Fatalf("Mkdir destination: %v", err)
+	}
+
+	source := sourceNode.(*Dir)
+	destination := destinationNode.(*Dir)
+	if _, _, err := source.Create(ctx(), &fuse.CreateRequest{Name: "old.txt", Mode: 0o666}, &fuse.CreateResponse{}); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	past := time.Unix(1, 0)
+	source.mu.Lock()
+	source.mtime = past
+	source.ctime = past
+	source.mu.Unlock()
+	destination.mu.Lock()
+	destination.mtime = past
+	destination.ctime = past
+	destination.mu.Unlock()
+
+	if err := source.Rename(ctx(), &fuse.RenameRequest{
+		OldName: "old.txt",
+		NewName: "new.txt",
+	}, destination); err != nil {
+		t.Fatalf("Rename: %v", err)
+	}
+
+	var sourceAttr, destinationAttr fuse.Attr
+	if err := source.Attr(ctx(), &sourceAttr); err != nil {
+		t.Fatalf("source Attr: %v", err)
+	}
+
+	if err := destination.Attr(ctx(), &destinationAttr); err != nil {
+		t.Fatalf("destination Attr: %v", err)
+	}
+
+	if !sourceAttr.Mtime.After(past) || !sourceAttr.Ctime.After(past) {
+		t.Fatalf("source timestamps were not updated: mtime=%v ctime=%v", sourceAttr.Mtime, sourceAttr.Ctime)
+	}
+
+	if !destinationAttr.Mtime.After(past) || !destinationAttr.Ctime.After(past) {
+		t.Fatalf("destination timestamps were not updated: mtime=%v ctime=%v", destinationAttr.Mtime, destinationAttr.Ctime)
 	}
 }
 

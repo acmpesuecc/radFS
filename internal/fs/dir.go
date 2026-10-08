@@ -285,5 +285,11 @@ func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Nod
 	//adds to new
 	newParent.tree.Insert([]byte(req.NewName), node)
 
+	now := time.Now()
+	d.mtime = now
+	d.ctime = now
+	newParent.mtime = now
+	newParent.ctime = now
+
 	return nil
 }
