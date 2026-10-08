@@ -46,7 +46,20 @@ func (d *Dir) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse.
 		d.mtime = req.Mtime
 	}
 
-	d.ctime = time.Now()
+	uidChanged := req.Valid.Uid()
+	gidChanged := req.Valid.Gid()
+
+	if uidChanged {
+		d.uid = req.Uid
+	}
+
+	if gidChanged {
+		d.gid = req.Gid
+	}
+
+	if uidChanged || gidChanged {
+		d.ctime = time.Now()
+	}
 
 	resp.Attr.Inode = d.inode
 	resp.Attr.Mode = os.ModeDir | 0o755
@@ -130,8 +143,8 @@ func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error
 		atime: now,
 		mtime: now,
 		ctime: now,
-		uid:   uint32(os.Getuid()),
-		gid:   uint32(os.Getgid()),
+		uid:   req.Uid,
+		gid:   req.Gid,
 	}
 
 	d.tree.Insert([]byte(req.Name), newDir)
@@ -167,8 +180,8 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 		atime: now,
 		ctime: now,
 		mtime: now,
-		uid:   uint32(os.Getuid()),
-		gid:   uint32(os.Getgid()),
+		uid:   req.Uid,
+		gid:   req.Gid,
 	}
 
 	d.tree.Insert([]byte(req.Name), f)

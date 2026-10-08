@@ -133,6 +133,21 @@ func (f *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse
 		f.mtime = req.Mtime
 	}
 
+	uidChanged := req.Valid.Uid()
+	gidChanged := req.Valid.Gid()
+
+	if uidChanged {
+		f.uid = req.Uid
+	}
+
+	if gidChanged {
+		f.gid = req.Gid
+	}
+
+	if uidChanged || gidChanged {
+		f.ctime = time.Now()
+	}
+
 	resp.Attr.Inode = f.inode
 	resp.Attr.Mode = os.FileMode(f.mode)
 	resp.Attr.Size = uint64(len(f.data))
