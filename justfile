@@ -42,7 +42,7 @@ check:
 
 # Run all tests
 test:
-    go test -v ./internal/fs/...
+    go test -v ./...
 
 # tidy dependencies
 tidy:

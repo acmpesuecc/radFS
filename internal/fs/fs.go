@@ -25,22 +25,24 @@ func nextInode() uint64 {
 }
 
 func (f *FS) Root() (fs.Node, error) {
+	now := time.Now()
+
 	root := &Dir{
 		inode: 1,
 		tree:  art.New(),
 		fs:    f,
-		atime: time.Now(),
-		mtime: time.Now(),
-		ctime: time.Now(),
+		atime: now,
+		mtime: now,
+		ctime: now,
 	}
 
 	hello := &File{
 		inode: nextInode(),
 		data:  []byte("Hello from radFS!\n"),
 		mode:  0o666,
-		atime: time.Now(),
-		mtime: time.Now(),
-		ctime: time.Now(),
+		atime: now,
+		mtime: now,
+		ctime: now,
 		uid:   uint32(os.Getuid()), //permissions implemnet based on userid
 		gid:   uint32(os.Getgid()), //permissions implement based on groupid
 	}

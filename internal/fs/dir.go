@@ -119,15 +119,19 @@ func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error
 		return nil, syscall.EEXIST
 	}
 
+	now := time.Now()
 	newDir := &Dir{
 		inode: nextInode(),
 		tree:  art.New(),
 		fs:    d.fs,
-		atime: time.Now(),
-		mtime: time.Now(),
-		ctime: time.Now(),
+		atime: now,
+		mtime: now,
+		ctime: now,
 	}
+
 	d.tree.Insert([]byte(req.Name), newDir)
+	d.mtime = now
+	d.ctime = now
 
 	return newDir, nil
 }
@@ -150,11 +154,19 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 		return nil, nil, syscall.EEXIST
 	}
 
-	f := &File{inode: nextInode(), data: []byte{}, mode: uint32(req.Mode), atime: time.Now(),
-		ctime: time.Now(),
-		mtime: time.Now()}
+	now := time.Now()
+	f := &File{
+		inode: nextInode(),
+		data:  []byte{},
+		mode:  uint32(req.Mode),
+		atime: now,
+		ctime: now,
+		mtime: now,
+	}
 
 	d.tree.Insert([]byte(req.Name), f)
+	d.mtime = now
+	d.ctime = now
 
 	return f, f, nil
 }
@@ -188,8 +200,9 @@ func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 
 	d.tree.Delete([]byte(req.Name))
 
-	d.mtime = time.Now()
-	d.ctime = time.Now()
+	now := time.Now()
+	d.mtime = now
+	d.ctime = now
 
 	return nil
 }
