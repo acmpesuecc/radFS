@@ -1,0 +1,14 @@
+radfs*
+main
+*.out
+*.exe
+*.test
+
+# Mountpoints
+mnt/
+test/
+
+**/.DS_Store
+
+go.work
+go.work.sum
